@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/omnihive-core",
+    "apps/cli",
+    "app/src-tauri",
+]

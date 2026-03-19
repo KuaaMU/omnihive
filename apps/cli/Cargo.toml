@@ -1,0 +1,15 @@
+[package]
+name = "omnihive-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for the Omnihive execution control plane"
+
+[[bin]]
+name = "omnihive"
+path = "src/main.rs"
+
+[dependencies]
+omnihive-core = { path = "../../crates/omnihive-core" }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
