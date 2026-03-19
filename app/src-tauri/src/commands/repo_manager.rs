@@ -188,7 +188,7 @@ pub fn install_repo_skill(repo_id: String, skill_path: String) -> Result<SkillIn
 
     // Determine skill name from path
     let skill_name = skill_path.split('/')
-        .last()
+        .next_back()
         .unwrap_or("unknown-skill")
         .to_string();
 

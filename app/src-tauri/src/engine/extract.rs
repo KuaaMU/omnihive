@@ -1,6 +1,6 @@
-/// Pure extraction functions for parsing LLM responses.
-///
-/// All functions in this module are side-effect-free and easily testable.
+//! Pure extraction functions for parsing LLM responses.
+//!
+//! All functions in this module are side-effect-free and easily testable.
 
 /// Extract text between two markers, returning None if markers are missing or content is empty.
 pub fn extract_between_markers(text: &str, start_marker: &str, end_marker: &str) -> Option<String> {

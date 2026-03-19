@@ -157,32 +157,62 @@ struct CommandResult {
     exit_code: i32,
 }
 
-fn execute_command(command: &str, working_dir: &str, _timeout_secs: u64) -> Result<CommandResult, ToolError> {
+fn execute_command(command: &str, working_dir: &str, timeout_secs: u64) -> Result<CommandResult, ToolError> {
     let shell = if cfg!(target_os = "windows") {
         ("cmd", "/C")
     } else {
         ("sh", "-c")
     };
 
-    let result = Command::new(shell.0)
+    let mut child = Command::new(shell.0)
         .arg(shell.1)
         .arg(command)
         .current_dir(working_dir)
-        .output()
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .map_err(|e| {
             ToolError::execution_failed(&format!("Failed to spawn process: {}", e))
                 .with_cause(&e.to_string())
         })?;
 
-    let stdout = String::from_utf8_lossy(&result.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&result.stderr).to_string();
-    let exit_code = result.status.code().unwrap_or(-1);
+    let timeout = std::time::Duration::from_secs(timeout_secs);
+    let start = std::time::Instant::now();
 
-    Ok(CommandResult {
-        stdout,
-        stderr,
-        exit_code,
-    })
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let stdout = child.stdout.take()
+                    .map(|mut s| { let mut buf = Vec::new(); std::io::Read::read_to_end(&mut s, &mut buf).ok(); buf })
+                    .unwrap_or_default();
+                let stderr = child.stderr.take()
+                    .map(|mut s| { let mut buf = Vec::new(); std::io::Read::read_to_end(&mut s, &mut buf).ok(); buf })
+                    .unwrap_or_default();
+
+                return Ok(CommandResult {
+                    stdout: String::from_utf8_lossy(&stdout).to_string(),
+                    stderr: String::from_utf8_lossy(&stderr).to_string(),
+                    exit_code: status.code().unwrap_or(-1),
+                });
+            }
+            Ok(None) => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(ToolError::execution_failed(&format!(
+                        "Command timed out after {}s",
+                        timeout_secs
+                    )));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(e) => {
+                return Err(ToolError::execution_failed(&format!(
+                    "Failed to wait for process: {}", e
+                )));
+            }
+        }
+    }
 }
 
 /// Normalize a path for comparison (trim trailing slashes, lowercase on windows).

@@ -1,4 +1,4 @@
-/// Structured logging initialization using the `tracing` crate.
+//! Structured logging initialization using the `tracing` crate.
 
 use std::path::Path;
 

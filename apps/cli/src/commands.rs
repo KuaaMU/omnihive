@@ -112,7 +112,7 @@ fn print_replay_summary(summary: &trace_export::ReplaySummary) {
 /// Watch a task's live status (simple poll-and-display).
 pub fn watch(task_id: &str, dir: &Path) -> Result<(), String> {
     if let Some(task) = task_model::read_task_state(dir) {
-        if task.task_id.starts_with(task_id) || task_id == &task.task_id {
+        if task.task_id.starts_with(task_id) || task_id == task.task_id {
             println!("Task: {} [{}]", task.task_id, task.status);
             println!("  Goal:     {}", task.goal);
             println!("  Progress: {}/{} steps", task.current_step_index, task.total_steps);

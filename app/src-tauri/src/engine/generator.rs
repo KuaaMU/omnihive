@@ -124,7 +124,7 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
             agent.role, agent.persona.id, agent.layer, agent.model
         ));
     }
-    md.push_str("\n");
+    md.push('\n');
 
     // Workflows
     if !config.workflows.is_empty() {
@@ -191,7 +191,7 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
         for skill in &agent.skills {
             md.push_str(&format!("- {}\n", skill));
         }
-        md.push_str("\n");
+        md.push('\n');
     }
 
     // Operational protocol
@@ -208,7 +208,7 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
         for d in &agent.decides {
             md.push_str(&format!("- {}\n", d));
         }
-        md.push_str("\n");
+        md.push('\n');
     }
 
     // Guardrails

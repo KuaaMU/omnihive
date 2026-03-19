@@ -121,21 +121,20 @@ fn detect_arch() -> String {
 }
 
 fn detect_shells() -> Vec<ShellInfo> {
-    let mut shells = Vec::new();
-
-    // PowerShell (Windows primary, also available on macOS/Linux)
-    shells.push(detect_shell_info(
-        "powershell",
-        &["powershell", "pwsh"],
-        &["-Command", "$PSVersionTable.PSVersion.ToString()"],
-    ));
-
-    // Bash
-    shells.push(detect_shell_info(
-        "bash",
-        &["bash"],
-        &["--version"],
-    ));
+    let mut shells = vec![
+        // PowerShell (Windows primary, also available on macOS/Linux)
+        detect_shell_info(
+            "powershell",
+            &["powershell", "pwsh"],
+            &["-Command", "$PSVersionTable.PSVersion.ToString()"],
+        ),
+        // Bash
+        detect_shell_info(
+            "bash",
+            &["bash"],
+            &["--version"],
+        ),
+    ];
 
     // Cmd (Windows only)
     #[cfg(target_os = "windows")]
@@ -270,8 +269,8 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
             // Take just the first line and trim version prefixes
             let line = out.lines().next().unwrap_or("").trim();
             // Strip common prefixes like "v" from version strings
-            if line.starts_with('v') {
-                line[1..].to_string()
+            if let Some(stripped) = line.strip_prefix('v') {
+                stripped.to_string()
             } else {
                 line.to_string()
             }

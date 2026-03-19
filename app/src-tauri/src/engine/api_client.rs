@@ -151,7 +151,7 @@ pub fn call_api(config: &ApiCallConfig) -> Result<CycleResponse, String> {
             &config.user_message,
             config.timeout_secs,
         ),
-        "anthropic" | "claude-code" | _ => {
+        _ => {
             if config.force_stream {
                 call_anthropic_streaming(config)
             } else {

@@ -15,7 +15,8 @@ impl FileSystemTool {
     }
 
     /// Resolve and validate path within workspace.
-    fn resolve_path(path_str: &str, workspace: &str) -> Result<PathBuf, ToolError> {
+    /// If `require_parent` is true, the parent directory must already exist.
+    fn resolve_path(path_str: &str, workspace: &str, require_parent: bool) -> Result<PathBuf, ToolError> {
         let path = Path::new(path_str);
         let resolved = if path.is_absolute() {
             path.to_path_buf()
@@ -23,13 +24,15 @@ impl FileSystemTool {
             Path::new(workspace).join(path)
         };
 
-        // Canonicalize if the parent exists (for new files, parent must exist)
-        let parent = resolved.parent().unwrap_or(Path::new("."));
-        if !parent.exists() {
-            return Err(ToolError::not_found(&format!(
-                "Parent directory does not exist: {}",
-                parent.display()
-            )));
+        // For read/list/diff, parent must exist; for write, we create it
+        if require_parent {
+            let parent = resolved.parent().unwrap_or(Path::new("."));
+            if !parent.exists() {
+                return Err(ToolError::not_found(&format!(
+                    "Parent directory does not exist: {}",
+                    parent.display()
+                )));
+            }
         }
 
         Ok(resolved)
@@ -196,7 +199,8 @@ impl Tool for FileSystemTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ToolError::invalid_input("Missing 'path' parameter"))?;
 
-        let resolved = Self::resolve_path(path_str, &ctx.workspace)?;
+        let require_parent = operation != "write";
+        let resolved = Self::resolve_path(path_str, &ctx.workspace, require_parent)?;
 
         match operation {
             "read" => {
@@ -223,7 +227,7 @@ impl Tool for FileSystemTool {
                     .get("path_b")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| ToolError::invalid_input("Missing 'path_b' for diff operation"))?;
-                let resolved_b = Self::resolve_path(path_b_str, &ctx.workspace)?;
+                let resolved_b = Self::resolve_path(path_b_str, &ctx.workspace, true)?;
                 Self::execute_diff(&resolved, &resolved_b)
             }
             _ => Err(ToolError::invalid_input(&format!(

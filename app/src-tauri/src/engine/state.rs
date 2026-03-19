@@ -1,4 +1,4 @@
-/// State file management: write/parse loop state, append log entries.
+//! State file management: write/parse loop state, append log entries.
 
 use std::path::Path;
 

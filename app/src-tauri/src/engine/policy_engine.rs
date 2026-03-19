@@ -178,8 +178,7 @@ fn action_matches(pattern: &str, action: &str) -> bool {
     if pattern == "*" {
         return true;
     }
-    if pattern.ends_with(".*") {
-        let prefix = &pattern[..pattern.len() - 2];
+    if let Some(prefix) = pattern.strip_suffix(".*") {
         return action.starts_with(prefix);
     }
     pattern == action
@@ -223,8 +222,7 @@ fn conditions_match(conditions: &RuleConditions, request: &ToolRequest) -> bool 
 }
 
 fn path_matches(pattern: &str, path: &str) -> bool {
-    if pattern.ends_with('*') {
-        let prefix = &pattern[..pattern.len() - 1];
+    if let Some(prefix) = pattern.strip_suffix('*') {
         return path.starts_with(prefix);
     }
     pattern == path

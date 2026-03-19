@@ -16,9 +16,8 @@ struct WorkflowYaml {
 #[derive(serde::Deserialize)]
 struct WorkflowStepYaml {
     role: String,
-    #[allow(dead_code)]
-    #[serde(default)]
-    persona: String,
+    #[serde(default, rename = "persona")]
+    _persona: String,
 }
 
 fn default_convergence() -> u32 { 1 }
