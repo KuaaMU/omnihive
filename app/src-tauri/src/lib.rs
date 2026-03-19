@@ -16,6 +16,9 @@ use commands::repo_manager as repo_mgr_cmd;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize structured logging (JSON to logs/ + human-readable to stderr)
+    engine::logging::init_logging(None);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())

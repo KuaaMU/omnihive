@@ -472,3 +472,185 @@ pub struct ToolInfo {
     pub install_command: String,
     pub install_url: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cycle_result_serde_roundtrip() {
+        let original = CycleResult {
+            cycle_number: 5,
+            started_at: "2025-01-01T00:00:00+00:00".to_string(),
+            completed_at: "2025-01-01T00:01:00+00:00".to_string(),
+            agent_role: "ceo".to_string(),
+            action: "Strategic analysis".to_string(),
+            outcome: "Decided to pivot".to_string(),
+            files_changed: vec!["consensus.md".to_string()],
+            error: None,
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let parsed: CycleResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.cycle_number, 5);
+        assert_eq!(parsed.agent_role, "ceo");
+        assert!(parsed.error.is_none());
+    }
+
+    #[test]
+    fn test_cycle_result_with_error() {
+        let original = CycleResult {
+            cycle_number: 3,
+            started_at: "t".to_string(),
+            completed_at: "t".to_string(),
+            agent_role: "devops".to_string(),
+            action: "deploy".to_string(),
+            outcome: String::new(),
+            files_changed: vec![],
+            error: Some("API timeout".to_string()),
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let parsed: CycleResult = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.error, Some("API timeout".to_string()));
+    }
+
+    #[test]
+    fn test_runtime_status_serde_roundtrip() {
+        let original = RuntimeStatus {
+            is_running: true,
+            pid: Some(1234),
+            current_cycle: 10,
+            total_cycles: 50,
+            consecutive_errors: 0,
+            last_cycle_at: Some("2025-01-01T00:00:00+00:00".to_string()),
+            uptime_seconds: 3600,
+        };
+        let json = serde_json::to_string(&original).unwrap();
+        let parsed: RuntimeStatus = serde_json::from_str(&json).unwrap();
+        assert!(parsed.is_running);
+        assert_eq!(parsed.pid, Some(1234));
+        assert_eq!(parsed.current_cycle, 10);
+    }
+
+    #[test]
+    fn test_project_status_enum_serde() {
+        let statuses = vec![
+            ProjectStatus::Initializing,
+            ProjectStatus::Running,
+            ProjectStatus::Paused,
+            ProjectStatus::Stopped,
+            ProjectStatus::Error,
+        ];
+        for status in statuses {
+            let json = serde_json::to_string(&status).unwrap();
+            let parsed: ProjectStatus = serde_json::from_str(&json).unwrap();
+            assert_eq!(parsed, status);
+        }
+    }
+
+    #[test]
+    fn test_guardrail_config_serde() {
+        let config = GuardrailConfig {
+            forbidden: vec!["rm -rf /".to_string(), "gh repo delete".to_string()],
+            workspace: "projects/".to_string(),
+            require_critic_review: true,
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        let parsed: GuardrailConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.forbidden.len(), 2);
+        assert!(parsed.require_critic_review);
+    }
+
+    #[test]
+    fn test_guardrail_config_defaults() {
+        let json = r#"{"forbidden":[]}"#;
+        let parsed: GuardrailConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.workspace, "projects/");
+        assert!(!parsed.require_critic_review);
+    }
+
+    #[test]
+    fn test_project_runtime_override_default() {
+        let ovr = ProjectRuntimeOverride::default();
+        assert!(ovr.engine.is_none());
+        assert!(ovr.model.is_none());
+        assert!(ovr.provider_id.is_none());
+    }
+
+    #[test]
+    fn test_project_runtime_override_serde() {
+        let ovr = ProjectRuntimeOverride {
+            engine: Some("claude".to_string()),
+            model: None,
+            provider_id: Some("p1".to_string()),
+        };
+        let json = serde_json::to_string(&ovr).unwrap();
+        let parsed: ProjectRuntimeOverride = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.engine, Some("claude".to_string()));
+        assert!(parsed.model.is_none());
+    }
+
+    #[test]
+    fn test_factory_config_yaml_roundtrip() {
+        let yaml = r#"
+company:
+  name: "Test Corp"
+  mission: "Test mission"
+  seed_prompt: "Build a test app"
+org:
+  agents:
+    - role: ceo
+      persona:
+        id: jeff-bezos
+      model: opus
+      layer: strategy
+workflows:
+  - id: test-flow
+    name: Test Flow
+    description: A test workflow
+    chain: [ceo]
+    convergence_cycles: 1
+runtime:
+  providers:
+    - engine: claude
+      model: sonnet
+  budget:
+    max_daily_usd: 10.0
+    alert_at_usd: 8.0
+guardrails:
+  forbidden:
+    - "rm -rf /"
+"#;
+        let config: FactoryConfig = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(config.company.name, "Test Corp");
+        assert_eq!(config.org.agents.len(), 1);
+        assert_eq!(config.org.agents[0].role, "ceo");
+        assert_eq!(config.workflows.len(), 1);
+        assert_eq!(config.guardrails.forbidden.len(), 1);
+    }
+
+    #[test]
+    fn test_model_tier_enum() {
+        let json = r#""opus""#;
+        let tier: ModelTier = serde_json::from_str(json).unwrap();
+        assert_eq!(tier, ModelTier::Opus);
+    }
+
+    #[test]
+    fn test_persona_info_serde() {
+        let info = PersonaInfo {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            role: "ceo".to_string(),
+            expertise: "Testing".to_string(),
+            mental_models: vec!["model1".to_string()],
+            core_capabilities: vec!["cap1".to_string()],
+            enabled: true,
+            file_path: None,
+            tags: vec![],
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        let parsed: PersonaInfo = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.id, "test");
+        assert!(parsed.enabled);
+    }
+}

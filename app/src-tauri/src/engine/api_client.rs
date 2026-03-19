@@ -466,3 +466,89 @@ fn truncate(s: &str, max_len: usize) -> String {
         format!("{}...", &s[..max_len])
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- resolve_anthropic_model ---
+
+    #[test]
+    fn test_resolve_anthropic_model_opus() {
+        assert_eq!(resolve_anthropic_model("opus"), "claude-opus-4-20250514");
+    }
+
+    #[test]
+    fn test_resolve_anthropic_model_sonnet() {
+        assert_eq!(resolve_anthropic_model("sonnet"), "claude-sonnet-4-20250514");
+    }
+
+    #[test]
+    fn test_resolve_anthropic_model_haiku() {
+        assert_eq!(resolve_anthropic_model("haiku"), "claude-3-5-haiku-20241022");
+    }
+
+    #[test]
+    fn test_resolve_anthropic_model_passthrough_full_id() {
+        let model = "claude-sonnet-4-20250514";
+        assert_eq!(resolve_anthropic_model(model), model);
+    }
+
+    #[test]
+    fn test_resolve_anthropic_model_passthrough_custom() {
+        assert_eq!(resolve_anthropic_model("my-custom-model"), "my-custom-model");
+    }
+
+    #[test]
+    fn test_resolve_anthropic_model_unknown_tier() {
+        assert_eq!(resolve_anthropic_model("gpt4"), "gpt4");
+    }
+
+    // --- build_system_value ---
+
+    #[test]
+    fn test_build_system_value_anthropic() {
+        let val = build_system_value("test prompt", "anthropic");
+        assert_eq!(val, serde_json::Value::String("test prompt".to_string()));
+    }
+
+    #[test]
+    fn test_build_system_value_claude_code() {
+        let val = build_system_value("test prompt", "claude-code");
+        assert!(val.is_array());
+        let arr = val.as_array().unwrap();
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0]["type"], "text");
+        assert_eq!(arr[0]["text"], "test prompt");
+    }
+
+    // --- truncate ---
+
+    #[test]
+    fn test_truncate_short_string() {
+        assert_eq!(truncate("hello", 10), "hello");
+    }
+
+    #[test]
+    fn test_truncate_long_string() {
+        let result = truncate("hello world!", 5);
+        assert_eq!(result, "hello...");
+    }
+
+    #[test]
+    fn test_truncate_exact_length() {
+        assert_eq!(truncate("exact", 5), "exact");
+    }
+
+    // --- ApiCallConfig default ---
+
+    #[test]
+    fn test_api_call_config_default() {
+        let config = ApiCallConfig::default();
+        assert_eq!(config.api_base_url, "https://api.anthropic.com");
+        assert_eq!(config.model, "claude-sonnet-4-20250514");
+        assert_eq!(config.timeout_secs, 1800);
+        assert_eq!(config.api_format, "anthropic");
+        assert!(!config.force_stream);
+    }
+}
