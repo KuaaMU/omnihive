@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Mutex;
-use std::sync::atomic::Ordering;
-use crate::engine::state;
-use crate::models::*;
 use super::credentials::resolve_api_credentials;
 use super::cycle_executor::load_cycle_history;
 use super::loop_manager::RUNNING_LOOPS;
 use crate::engine::api_client;
+use crate::engine::state;
+use crate::models::*;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
 // ===== Project Events =====
 
@@ -102,8 +102,7 @@ pub(crate) fn get_agent_memory_impl(project_dir: &str, role: &str) -> Result<Str
     if !memory_path.exists() {
         return Ok(String::new());
     }
-    std::fs::read_to_string(&memory_path)
-        .map_err(|e| format!("Failed to read agent memory: {}", e))
+    std::fs::read_to_string(&memory_path).map_err(|e| format!("Failed to read agent memory: {}", e))
 }
 
 pub(crate) fn get_handoff_note_impl(project_dir: &str) -> Result<String, String> {
@@ -121,17 +120,15 @@ pub(crate) fn tail_log_impl(project_dir: &str, lines: usize) -> Result<Vec<Strin
     let log_file = dir.join("logs/auto-loop.log");
 
     if !log_file.exists() {
-        return Ok(vec![
-            "No log file yet. Start the loop to begin.".to_string(),
-        ]);
+        return Ok(vec!["No log file yet. Start the loop to begin.".to_string()]);
     }
 
-    let content = std::fs::read_to_string(&log_file)
-        .map_err(|e| format!("Failed to read log: {}", e))?;
+    let content =
+        std::fs::read_to_string(&log_file).map_err(|e| format!("Failed to read log: {}", e))?;
 
     if content.is_empty() {
         return Ok(vec![
-            "Log file is empty. Waiting for activity...".to_string(),
+            "Log file is empty. Waiting for activity...".to_string()
         ]);
     }
 
@@ -194,8 +191,7 @@ pub(crate) fn get_project_runtime_override_impl(
     }
     let content = std::fs::read_to_string(&override_path)
         .map_err(|e| format!("Failed to read runtime override: {}", e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse runtime override: {}", e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse runtime override: {}", e))
 }
 
 pub(crate) fn set_project_runtime_override_impl(
@@ -206,8 +202,7 @@ pub(crate) fn set_project_runtime_override_impl(
     let override_path = dir.join(".runtime_override.json");
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize override: {}", e))?;
-    std::fs::write(&override_path, json)
-        .map_err(|e| format!("Failed to write override: {}", e))?;
+    std::fs::write(&override_path, json).map_err(|e| format!("Failed to write override: {}", e))?;
     Ok(true)
 }
 

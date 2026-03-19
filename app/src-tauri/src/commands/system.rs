@@ -1,13 +1,14 @@
-use tauri::command;
-use crate::models::*;
 use crate::commands::runtime::{find_binary, resolve_engine_binary, silent_command};
+use crate::models::*;
+use tauri::command;
 
 #[command]
 pub fn detect_system() -> Result<SystemInfo, String> {
     let os = detect_os();
     let arch = detect_arch();
     let shells = detect_shells();
-    let default_shell = shells.iter()
+    let default_shell = shells
+        .iter()
         .find(|s| s.available)
         .map(|s| s.name.clone())
         .unwrap_or_else(|| "unknown".to_string());
@@ -31,7 +32,8 @@ pub fn install_tool(tool_name: String, install_dir: Option<String>) -> Result<St
     // Verify npm is available
     if find_binary("npm").is_none() {
         return Err(
-            "npm is not installed. Please install Node.js first from https://nodejs.org/".to_string()
+            "npm is not installed. Please install Node.js first from https://nodejs.org/"
+                .to_string(),
         );
     }
 
@@ -58,8 +60,7 @@ pub fn install_tool(tool_name: String, install_dir: Option<String>) -> Result<St
         args.push(&prefix_flag);
     }
 
-    let npm_path = find_binary("npm")
-        .ok_or_else(|| "npm not found in PATH".to_string())?;
+    let npm_path = find_binary("npm").ok_or_else(|| "npm not found in PATH".to_string())?;
 
     // On Windows, npm might be a .cmd file
     #[cfg(target_os = "windows")]
@@ -70,15 +71,11 @@ pub fn install_tool(tool_name: String, install_dir: Option<String>) -> Result<St
             .args(&args)
             .output()
     } else {
-        silent_command(&npm_path)
-            .args(&args)
-            .output()
+        silent_command(&npm_path).args(&args).output()
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = silent_command(&npm_path)
-        .args(&args)
-        .output();
+    let output = silent_command(&npm_path).args(&args).output();
 
     match output {
         Ok(o) => {
@@ -107,13 +104,21 @@ pub fn check_engine(engine: String) -> Result<String, String> {
 
 fn detect_os() -> String {
     #[cfg(target_os = "windows")]
-    { "windows".to_string() }
+    {
+        "windows".to_string()
+    }
     #[cfg(target_os = "macos")]
-    { "macos".to_string() }
+    {
+        "macos".to_string()
+    }
     #[cfg(target_os = "linux")]
-    { "linux".to_string() }
+    {
+        "linux".to_string()
+    }
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    { std::env::consts::OS.to_string() }
+    {
+        std::env::consts::OS.to_string()
+    }
 }
 
 fn detect_arch() -> String {
@@ -121,21 +126,16 @@ fn detect_arch() -> String {
 }
 
 fn detect_shells() -> Vec<ShellInfo> {
-    let mut shells = Vec::new();
-
-    // PowerShell (Windows primary, also available on macOS/Linux)
-    shells.push(detect_shell_info(
-        "powershell",
-        &["powershell", "pwsh"],
-        &["-Command", "$PSVersionTable.PSVersion.ToString()"],
-    ));
-
-    // Bash
-    shells.push(detect_shell_info(
-        "bash",
-        &["bash"],
-        &["--version"],
-    ));
+    let mut shells = vec![
+        // PowerShell (Windows primary, also available on macOS/Linux)
+        detect_shell_info(
+            "powershell",
+            &["powershell", "pwsh"],
+            &["-Command", "$PSVersionTable.PSVersion.ToString()"],
+        ),
+        // Bash
+        detect_shell_info("bash", &["bash"], &["--version"]),
+    ];
 
     // Cmd (Windows only)
     #[cfg(target_os = "windows")]
@@ -148,11 +148,7 @@ fn detect_shells() -> Vec<ShellInfo> {
 
     // Zsh (macOS/Linux)
     #[cfg(not(target_os = "windows"))]
-    shells.push(detect_shell_info(
-        "zsh",
-        &["zsh"],
-        &["--version"],
-    ));
+    shells.push(detect_shell_info("zsh", &["zsh"], &["--version"]));
 
     shells
 }
@@ -253,27 +249,21 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
             .args(args)
             .output()
     } else {
-        silent_command(&full_path)
-            .args(args)
-            .output()
+        silent_command(&full_path).args(args).output()
     };
 
     #[cfg(not(target_os = "windows"))]
-    let output = silent_command(&full_path)
-        .args(args)
-        .output();
+    let output = silent_command(&full_path).args(args).output();
 
-    output.ok()
-        .filter(|o| o.status.success())
-        .map(|o| {
-            let out = String::from_utf8_lossy(&o.stdout);
-            // Take just the first line and trim version prefixes
-            let line = out.lines().next().unwrap_or("").trim();
-            // Strip common prefixes like "v" from version strings
-            if line.starts_with('v') {
-                line[1..].to_string()
-            } else {
-                line.to_string()
-            }
-        })
+    output.ok().filter(|o| o.status.success()).map(|o| {
+        let out = String::from_utf8_lossy(&o.stdout);
+        // Take just the first line and trim version prefixes
+        let line = out.lines().next().unwrap_or("").trim();
+        // Strip common prefixes like "v" from version strings
+        if let Some(stripped) = line.strip_prefix('v') {
+            stripped.to_string()
+        } else {
+            line.to_string()
+        }
+    })
 }

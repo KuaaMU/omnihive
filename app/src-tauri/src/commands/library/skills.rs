@@ -1,5 +1,5 @@
-use crate::models::SkillInfo;
 use super::registry::get_library_dir;
+use crate::models::SkillInfo;
 
 #[derive(serde::Deserialize)]
 struct SkillYaml {
@@ -23,7 +23,11 @@ pub(crate) fn load_skills_from_files() -> Option<Vec<SkillInfo>> {
         if let Ok(entries) = std::fs::read_dir(&skills_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
                 if name.starts_with('_') || !name.ends_with(".yaml") {
                     continue;
                 }
@@ -47,12 +51,22 @@ pub(crate) fn load_skills_from_files() -> Option<Vec<SkillInfo>> {
     }
 
     // 2. Load from library/real-skills/*/SKILL.md
-    load_skills_from_dir(&lib_dir, "real-skills", "General", "real-skills", &mut skills);
+    load_skills_from_dir(
+        &lib_dir,
+        "real-skills",
+        "General",
+        "real-skills",
+        &mut skills,
+    );
 
     // 3. Load from library/ecc-skills/*/SKILL.md
     load_skills_from_dir(&lib_dir, "ecc-skills", "Engineering", "ecc", &mut skills);
 
-    if skills.is_empty() { None } else { Some(skills) }
+    if skills.is_empty() {
+        None
+    } else {
+        Some(skills)
+    }
 }
 
 fn load_skills_from_dir(
@@ -93,7 +107,9 @@ fn load_skills_from_dir(
                 let (name, desc) = parse_skill_md_frontmatter(&content);
                 let preview = content
                     .lines()
-                    .filter(|l| !l.starts_with('#') && !l.starts_with("---") && !l.trim().is_empty())
+                    .filter(|l| {
+                        !l.starts_with('#') && !l.starts_with("---") && !l.trim().is_empty()
+                    })
                     .take(1)
                     .collect::<Vec<_>>()
                     .join("");
@@ -156,8 +172,7 @@ fn truncate(s: &str, max: usize) -> String {
 }
 
 pub(crate) fn get_skill_content_impl(skill_id: &str) -> Result<String, String> {
-    let lib_dir = get_library_dir()
-        .ok_or_else(|| "Library directory not found".to_string())?;
+    let lib_dir = get_library_dir().ok_or_else(|| "Library directory not found".to_string())?;
 
     let real_path = lib_dir.join("real-skills").join(skill_id).join("SKILL.md");
     if real_path.exists() {
@@ -185,45 +200,133 @@ pub(crate) fn fallback_skills() -> Vec<SkillInfo> {
     let mut skills = Vec::new();
 
     let auto_company = vec![
-        ("deep-research", "Research", "Comprehensive research methodology"),
-        ("product-strategist", "Product", "Product strategy framework"),
+        (
+            "deep-research",
+            "Research",
+            "Comprehensive research methodology",
+        ),
+        (
+            "product-strategist",
+            "Product",
+            "Product strategy framework",
+        ),
         ("market-sizing", "Business", "TAM/SAM/SOM market sizing"),
-        ("startup-financial-modeling", "Finance", "Financial modeling for startups"),
-        ("micro-saas-launcher", "Operations", "Micro-SaaS launch playbook"),
+        (
+            "startup-financial-modeling",
+            "Finance",
+            "Financial modeling for startups",
+        ),
+        (
+            "micro-saas-launcher",
+            "Operations",
+            "Micro-SaaS launch playbook",
+        ),
         ("premortem", "Strategy", "Pre-mortem analysis"),
-        ("code-review-security", "Engineering", "Security-focused code review"),
+        (
+            "code-review-security",
+            "Engineering",
+            "Security-focused code review",
+        ),
         ("devops", "Engineering", "DevOps pipeline setup"),
         ("senior-qa", "Engineering", "Senior QA testing strategy"),
         ("security-audit", "Security", "Security audit framework"),
-        ("competitive-intelligence", "Business", "Competitive intelligence"),
-        ("financial-unit-economics", "Finance", "Unit economics analysis"),
-        ("seo-content-strategist", "Marketing", "SEO and content strategy"),
+        (
+            "competitive-intelligence",
+            "Business",
+            "Competitive intelligence",
+        ),
+        (
+            "financial-unit-economics",
+            "Finance",
+            "Unit economics analysis",
+        ),
+        (
+            "seo-content-strategist",
+            "Marketing",
+            "SEO and content strategy",
+        ),
         ("pricing-strategy", "Business", "Pricing strategy framework"),
         ("web-scraping", "Engineering", "Web scraping tools"),
     ];
 
     for (id, category, description) in auto_company {
-        skills.push(SkillInfo { id: id.into(), name: id.replace('-', " "), category: category.into(), description: description.into(), source: "auto-company".into(), content_preview: String::new(), enabled, file_path: file_path.clone(), tags: tags.clone() });
+        skills.push(SkillInfo {
+            id: id.into(),
+            name: id.replace('-', " "),
+            category: category.into(),
+            description: description.into(),
+            source: "auto-company".into(),
+            content_preview: String::new(),
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        });
     }
 
     let ecc = vec![
-        ("tdd-workflow", "Engineering", "Test-driven development workflow"),
-        ("security-review", "Security", "Security vulnerability review"),
+        (
+            "tdd-workflow",
+            "Engineering",
+            "Test-driven development workflow",
+        ),
+        (
+            "security-review",
+            "Security",
+            "Security vulnerability review",
+        ),
         ("security-scan", "Security", "Automated security scanning"),
         ("python-patterns", "Engineering", "Python design patterns"),
         ("golang-patterns", "Engineering", "Go design patterns"),
-        ("postgres-patterns", "Engineering", "PostgreSQL query patterns"),
-        ("docker-patterns", "Engineering", "Docker containerization patterns"),
-        ("api-design", "Engineering", "REST API design best practices"),
-        ("frontend-patterns", "Engineering", "Frontend architecture patterns"),
-        ("backend-patterns", "Engineering", "Backend architecture patterns"),
-        ("e2e-testing", "Engineering", "End-to-end testing strategies"),
+        (
+            "postgres-patterns",
+            "Engineering",
+            "PostgreSQL query patterns",
+        ),
+        (
+            "docker-patterns",
+            "Engineering",
+            "Docker containerization patterns",
+        ),
+        (
+            "api-design",
+            "Engineering",
+            "REST API design best practices",
+        ),
+        (
+            "frontend-patterns",
+            "Engineering",
+            "Frontend architecture patterns",
+        ),
+        (
+            "backend-patterns",
+            "Engineering",
+            "Backend architecture patterns",
+        ),
+        (
+            "e2e-testing",
+            "Engineering",
+            "End-to-end testing strategies",
+        ),
         ("coding-standards", "Engineering", "Code quality standards"),
-        ("verification-loop", "Engineering", "Verification loop for code changes"),
+        (
+            "verification-loop",
+            "Engineering",
+            "Verification loop for code changes",
+        ),
     ];
 
     for (id, category, description) in ecc {
-        skills.push(SkillInfo { id: id.into(), name: id.replace('-', " "), category: category.into(), description: description.into(), source: "ecc".into(), content_preview: String::new(), enabled, file_path: file_path.clone(), tags: tags.clone() });
+        skills.push(SkillInfo {
+            id: id.into(),
+            name: id.replace('-', " "),
+            category: category.into(),
+            description: description.into(),
+            source: "ecc".into(),
+            content_preview: String::new(),
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        });
     }
 
     skills

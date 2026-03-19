@@ -1,11 +1,11 @@
 pub mod bootstrap;
-pub mod memory;
-pub mod runtime;
 pub mod library;
-pub mod settings;
-pub mod system;
+pub mod mcp;
+pub mod memory;
 pub mod provider_detect;
 pub mod provider_presets;
-pub mod mcp;
-pub mod skill_manager;
 pub mod repo_manager;
+pub mod runtime;
+pub mod settings;
+pub mod skill_manager;
+pub mod system;

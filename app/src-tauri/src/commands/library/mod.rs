@@ -7,9 +7,9 @@ pub mod registry;
 pub mod skills;
 pub mod workflows;
 
-use tauri::command;
 use crate::models::*;
 use registry::LibraryState;
+use tauri::command;
 
 // Re-export for runtime skill injection
 pub use registry::get_library_dir_pub;

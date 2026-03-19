@@ -105,10 +105,18 @@ pub struct RuntimeConfig {
     pub max_consecutive_errors: u32,
 }
 
-fn default_failover() -> String { "auto".to_string() }
-fn default_loop_interval() -> u32 { 30 }
-fn default_cycle_timeout() -> u32 { 1800 }
-fn default_max_errors() -> u32 { 5 }
+fn default_failover() -> String {
+    "auto".to_string()
+}
+fn default_loop_interval() -> u32 {
+    30
+}
+fn default_cycle_timeout() -> u32 {
+    1800
+}
+fn default_max_errors() -> u32 {
+    5
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GuardrailConfig {
@@ -119,7 +127,9 @@ pub struct GuardrailConfig {
     pub require_critic_review: bool,
 }
 
-fn default_workspace() -> String { "projects/".to_string() }
+fn default_workspace() -> String {
+    "projects/".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyConfig {
@@ -275,10 +285,10 @@ pub struct GenerateResult {
 pub struct SkillRepo {
     pub id: String,
     pub name: String,
-    pub owner: String,           // GitHub owner, e.g. "anthropics"
-    pub repo: String,            // GitHub repo name, e.g. "skills"
-    pub branch: String,          // branch name, e.g. "main"
-    pub path: String,            // subdirectory within repo, e.g. "skills"
+    pub owner: String,  // GitHub owner, e.g. "anthropics"
+    pub repo: String,   // GitHub repo name, e.g. "skills"
+    pub branch: String, // branch name, e.g. "main"
+    pub path: String,   // subdirectory within repo, e.g. "skills"
     pub enabled: bool,
 }
 
@@ -286,7 +296,7 @@ pub struct SkillRepo {
 pub struct RepoItem {
     pub name: String,
     pub path: String,
-    pub item_type: String,       // "file" or "dir"
+    pub item_type: String, // "file" or "dir"
     pub download_url: Option<String>,
     pub description: String,
 }
@@ -313,8 +323,12 @@ pub struct AppSettings {
     pub skill_repos: Vec<SkillRepo>,
 }
 
-fn default_language() -> String { "en".to_string() }
-fn default_theme() -> String { "obsidian".to_string() }
+fn default_language() -> String {
+    "en".to_string()
+}
+fn default_theme() -> String {
+    "obsidian".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiProvider {
@@ -339,9 +353,15 @@ pub struct AiProvider {
     pub api_format: String,
 }
 
-fn default_provider_engine() -> String { "claude".to_string() }
-fn default_anthropic_version() -> String { "2023-06-01".to_string() }
-fn default_api_format() -> String { "anthropic".to_string() }
+fn default_provider_engine() -> String {
+    "claude".to_string()
+}
+fn default_anthropic_version() -> String {
+    "2023-06-01".to_string()
+}
+fn default_api_format() -> String {
+    "anthropic".to_string()
+}
 
 // ===== Resolved Runtime Config (for config preview) =====
 
@@ -363,13 +383,13 @@ pub struct ResolvedRuntimeConfig {
 pub struct McpServerConfig {
     pub id: String,
     pub name: String,
-    pub server_type: String,        // "stdio" | "sse" | "streamable-http"
-    pub command: String,             // for stdio: executable command
-    pub args: Vec<String>,           // for stdio: command arguments
-    pub url: String,                 // for sse/http: server URL
-    pub env: std::collections::HashMap<String, String>,  // environment variables
+    pub server_type: String, // "stdio" | "sse" | "streamable-http"
+    pub command: String,     // for stdio: executable command
+    pub args: Vec<String>,   // for stdio: command arguments
+    pub url: String,         // for sse/http: server URL
+    pub env: std::collections::HashMap<String, String>, // environment variables
     pub enabled: bool,
-    pub tools: Vec<McpToolInfo>,     // discovered tools (cached)
+    pub tools: Vec<McpToolInfo>, // discovered tools (cached)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,6 +1,6 @@
+use crate::models::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::models::*;
 
 /// API credentials resolved at loop start.
 pub(crate) struct ApiCredentials {
@@ -37,8 +37,8 @@ pub(crate) fn load_app_settings() -> Result<AppSettings, String> {
         return Err("Settings file not found. Please configure settings first.".to_string());
     }
 
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read settings: {}", e))?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {}", e))?;
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings: {}", e))
 }
 
@@ -117,13 +117,12 @@ pub(crate) fn resolve_api_credentials(engine: &str, model: &str) -> Result<ApiCr
                     provider.api_base_url.clone()
                 };
 
-                let resolved_model = if !provider.default_model.is_empty()
-                    && provider.default_model.contains('-')
-                {
-                    provider.default_model.clone()
-                } else {
-                    model.to_string()
-                };
+                let resolved_model =
+                    if !provider.default_model.is_empty() && provider.default_model.contains('-') {
+                        provider.default_model.clone()
+                    } else {
+                        model.to_string()
+                    };
 
                 let api_format = if !provider.api_format.is_empty() {
                     provider.api_format.clone()
@@ -204,18 +203,34 @@ pub(crate) fn resolve_api_credentials(engine: &str, model: &str) -> Result<ApiCr
         "No API provider configured for engine '{}'. Add an {} provider with API key in Settings, \
          set the {} env var, or have a config file available.",
         engine,
-        match engine { "claude" => "Anthropic", "openai" | "codex" => "OpenAI", _ => engine },
-        match engine { "claude" => "ANTHROPIC_API_KEY", "openai" | "codex" => "OPENAI_API_KEY", _ => "API_KEY" }
+        match engine {
+            "claude" => "Anthropic",
+            "openai" | "codex" => "OpenAI",
+            _ => engine,
+        },
+        match engine {
+            "claude" => "ANTHROPIC_API_KEY",
+            "openai" | "codex" => "OPENAI_API_KEY",
+            _ => "API_KEY",
+        }
     ))
 }
 
 // ===== Auto Provider Selection =====
 
-pub(crate) fn auto_select_provider_internal() -> Result<(ApiCredentials, SelectedProvider), String> {
+pub(crate) fn auto_select_provider_internal() -> Result<(ApiCredentials, SelectedProvider), String>
+{
     use crate::commands::settings::derive_api_config;
 
     let priority: &[&str] = &[
-        "anthropic", "openai", "openrouter", "deepseek", "groq", "mistral", "google", "custom",
+        "anthropic",
+        "openai",
+        "openrouter",
+        "deepseek",
+        "groq",
+        "mistral",
+        "google",
+        "custom",
     ];
 
     // 1. Check configured providers (enabled + healthy first)
@@ -232,8 +247,14 @@ pub(crate) fn auto_select_provider_internal() -> Result<(ApiCredentials, Selecte
             if a_health != b_health {
                 return a_health.cmp(&b_health);
             }
-            let a_prio = priority.iter().position(|&t| t == a.provider_type).unwrap_or(99);
-            let b_prio = priority.iter().position(|&t| t == b.provider_type).unwrap_or(99);
+            let a_prio = priority
+                .iter()
+                .position(|&t| t == a.provider_type)
+                .unwrap_or(99);
+            let b_prio = priority
+                .iter()
+                .position(|&t| t == b.provider_type)
+                .unwrap_or(99);
             a_prio.cmp(&b_prio)
         });
 
@@ -387,13 +408,12 @@ pub(crate) fn resolve_runtime_config_impl(
                     provider.api_base_url.clone()
                 };
 
-                let resolved_model = if !provider.default_model.is_empty()
-                    && provider.default_model.contains('-')
-                {
-                    provider.default_model.clone()
-                } else {
-                    resolve_model_name(provider_type, &model)
-                };
+                let resolved_model =
+                    if !provider.default_model.is_empty() && provider.default_model.contains('-') {
+                        provider.default_model.clone()
+                    } else {
+                        resolve_model_name(provider_type, &model)
+                    };
 
                 return Ok(ResolvedRuntimeConfig {
                     engine: engine.clone(),
@@ -411,10 +431,18 @@ pub(crate) fn resolve_runtime_config_impl(
 
     // 2. Env vars
     let env_configs = match engine.as_str() {
-        "claude" => vec![("ANTHROPIC_API_KEY", "anthropic", "https://api.anthropic.com")],
+        "claude" => vec![(
+            "ANTHROPIC_API_KEY",
+            "anthropic",
+            "https://api.anthropic.com",
+        )],
         "openai" | "codex" => vec![("OPENAI_API_KEY", "openai", "https://api.openai.com")],
         _ => vec![
-            ("ANTHROPIC_API_KEY", "anthropic", "https://api.anthropic.com"),
+            (
+                "ANTHROPIC_API_KEY",
+                "anthropic",
+                "https://api.anthropic.com",
+            ),
             ("OPENAI_API_KEY", "openai", "https://api.openai.com"),
         ],
     };

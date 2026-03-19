@@ -190,7 +190,12 @@ impl ExecutionContext {
     }
 
     /// Check if an action is allowed by the policy engine.
-    pub fn check_policy(&self, action: &str, path: Option<&str>, command: Option<&str>) -> Result<(), ToolError> {
+    pub fn check_policy(
+        &self,
+        action: &str,
+        path: Option<&str>,
+        command: Option<&str>,
+    ) -> Result<(), ToolError> {
         let request = ToolRequest {
             action: action.to_string(),
             path: path.map(|s| s.to_string()),
@@ -201,9 +206,9 @@ impl ExecutionContext {
         match self.policy.evaluate(&request) {
             PolicyDecision::Allow => Ok(()),
             PolicyDecision::Deny { reason, .. } => Err(ToolError::policy_denied(&reason)),
-            PolicyDecision::RequiresApproval { reason, .. } => {
-                Err(ToolError::policy_denied(&format!("Requires approval: {}", reason)))
-            }
+            PolicyDecision::RequiresApproval { reason, .. } => Err(ToolError::policy_denied(
+                &format!("Requires approval: {}", reason),
+            )),
         }
     }
 }
@@ -251,10 +256,9 @@ impl ToolRegistry {
         input: &ToolInput,
         ctx: &ExecutionContext,
     ) -> Result<ToolOutput, ToolError> {
-        let tool = self
-            .tools
-            .get(&input.tool_name)
-            .ok_or_else(|| ToolError::not_found(&format!("Tool '{}' not found", input.tool_name)))?;
+        let tool = self.tools.get(&input.tool_name).ok_or_else(|| {
+            ToolError::not_found(&format!("Tool '{}' not found", input.tool_name))
+        })?;
 
         tool.execute(input, ctx)
     }
@@ -293,7 +297,11 @@ mod tests {
             }
         }
 
-        fn execute(&self, input: &ToolInput, _ctx: &ExecutionContext) -> Result<ToolOutput, ToolError> {
+        fn execute(
+            &self,
+            input: &ToolInput,
+            _ctx: &ExecutionContext,
+        ) -> Result<ToolOutput, ToolError> {
             Ok(ToolOutput::ok(serde_json::to_value(&input.params).unwrap()))
         }
     }

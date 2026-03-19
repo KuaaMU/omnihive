@@ -4,9 +4,9 @@
 //! completed step IDs, and a consensus snapshot. On resume, completed steps
 //! are skipped via idempotency keys.
 
+use crate::engine::task_model::Task;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use crate::engine::task_model::Task;
 
 const CHECKPOINT_FILE: &str = ".task.checkpoint.json";
 
@@ -113,8 +113,7 @@ mod tests {
 
     #[test]
     fn test_is_step_completed() {
-        let task = Task::new("/tmp", "test", vec![])
-            .with_step_completed("step-a");
+        let task = Task::new("/tmp", "test", vec![]).with_step_completed("step-a");
         let cp = Checkpoint::from_task(&task, "");
 
         assert!(cp.is_step_completed("step-a"));
@@ -198,10 +197,14 @@ mod tests {
         let dir = test_dir("resume");
 
         // Simulate: 3 steps completed, then crash
-        let task = Task::new(dir.to_str().unwrap(), "test", vec!["a".into(), "b".into(), "c".into()])
-            .with_step_completed("s1")
-            .with_step_completed("s2")
-            .with_step_completed("s3");
+        let task = Task::new(
+            dir.to_str().unwrap(),
+            "test",
+            vec!["a".into(), "b".into(), "c".into()],
+        )
+        .with_step_completed("s1")
+        .with_step_completed("s2")
+        .with_step_completed("s3");
         let cp = Checkpoint::from_task(&task, "consensus after step 3");
         save_checkpoint(&dir, &cp).unwrap();
 

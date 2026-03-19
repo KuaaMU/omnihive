@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use std::fs;
-use tauri::command;
 use crate::models::*;
+use std::fs;
+use std::path::PathBuf;
+use tauri::command;
 
 // ===== Skill Scanning =====
 
@@ -12,8 +12,14 @@ fn get_skill_scan_dirs() -> Vec<(String, PathBuf)> {
         ("claude".to_string(), home.join(".claude").join("skills")),
         ("codex".to_string(), home.join(".codex").join("skills")),
         ("gemini".to_string(), home.join(".gemini").join("skills")),
-        ("opencode".to_string(), home.join(".config").join("opencode").join("skills")),
-        ("openclaw".to_string(), home.join(".openclaw").join("skills")),
+        (
+            "opencode".to_string(),
+            home.join(".config").join("opencode").join("skills"),
+        ),
+        (
+            "openclaw".to_string(),
+            home.join(".openclaw").join("skills"),
+        ),
     ];
 
     // Also scan our own library
@@ -99,7 +105,10 @@ fn parse_agent_md(content: &str) -> (String, String, String, Vec<String>) {
 
         if in_capabilities {
             if trimmed.starts_with("- ") || trimmed.starts_with("* ") {
-                let cap = trimmed.trim_start_matches("- ").trim_start_matches("* ").to_string();
+                let cap = trimmed
+                    .trim_start_matches("- ")
+                    .trim_start_matches("* ")
+                    .to_string();
                 if capabilities.len() < 8 {
                     capabilities.push(cap);
                 }
@@ -117,9 +126,9 @@ pub struct ScannedSkill {
     pub id: String,
     pub name: String,
     pub description: String,
-    pub source: String,         // "claude", "codex", "gemini", etc.
-    pub directory: String,      // folder name
-    pub full_path: String,      // absolute path
+    pub source: String,    // "claude", "codex", "gemini", etc.
+    pub directory: String, // folder name
+    pub full_path: String, // absolute path
     pub has_skill_md: bool,
 }
 
@@ -133,7 +142,8 @@ pub fn scan_local_skills() -> Result<Vec<ScannedSkill>, String> {
             continue;
         }
 
-        let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read {}: {}", dir.display(), e))?;
+        let entries =
+            fs::read_dir(dir).map_err(|e| format!("Failed to read {}: {}", dir.display(), e))?;
 
         for entry in entries.flatten() {
             let path = entry.path();
@@ -141,7 +151,8 @@ pub fn scan_local_skills() -> Result<Vec<ScannedSkill>, String> {
                 continue;
             }
 
-            let dir_name = path.file_name()
+            let dir_name = path
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
 
@@ -151,10 +162,7 @@ pub fn scan_local_skills() -> Result<Vec<ScannedSkill>, String> {
             let (name, description) = if has_skill_md {
                 let content = fs::read_to_string(&skill_md).unwrap_or_default();
                 let (n, d) = parse_skill_md(&content);
-                (
-                    if n.is_empty() { dir_name.clone() } else { n },
-                    d,
-                )
+                (if n.is_empty() { dir_name.clone() } else { n }, d)
             } else {
                 (dir_name.clone(), String::new())
             };
@@ -204,13 +212,14 @@ pub struct AddSkillRequest {
 #[command]
 pub fn add_custom_skill(skill: AddSkillRequest) -> Result<SkillInfo, String> {
     let dir = get_custom_skills_dir();
-    let slug = skill.name.to_lowercase()
+    let slug = skill
+        .name
+        .to_lowercase()
         .replace(' ', "-")
         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
 
     let skill_dir = dir.join(&slug);
-    fs::create_dir_all(&skill_dir)
-        .map_err(|e| format!("Failed to create skill dir: {}", e))?;
+    fs::create_dir_all(&skill_dir).map_err(|e| format!("Failed to create skill dir: {}", e))?;
 
     // Write SKILL.md
     let skill_md_content = format!(
@@ -239,8 +248,7 @@ pub fn remove_custom_skill(skill_id: String) -> Result<bool, String> {
     let skill_dir = get_custom_skills_dir().join(slug);
 
     if skill_dir.exists() {
-        fs::remove_dir_all(&skill_dir)
-            .map_err(|e| format!("Failed to remove skill: {}", e))?;
+        fs::remove_dir_all(&skill_dir).map_err(|e| format!("Failed to remove skill: {}", e))?;
     }
 
     Ok(true)
@@ -261,24 +269,26 @@ pub struct AddAgentRequest {
 #[command]
 pub fn add_custom_agent(agent: AddAgentRequest) -> Result<PersonaInfo, String> {
     let dir = get_custom_agents_dir();
-    fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create agents dir: {}", e))?;
+    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create agents dir: {}", e))?;
 
     let slug = format!(
         "{}-{}",
         agent.role.to_lowercase().replace(' ', "-"),
         agent.name.to_lowercase().replace(' ', "-")
-    ).replace(|c: char| !c.is_alphanumeric() && c != '-', "");
+    )
+    .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
 
     let file_path = dir.join(format!("{}.md", slug));
 
-    let mental_models_str = agent.mental_models
+    let mental_models_str = agent
+        .mental_models
         .iter()
         .map(|m| format!("- {}", m))
         .collect::<Vec<_>>()
         .join("\n");
 
-    let capabilities_str = agent.core_capabilities
+    let capabilities_str = agent
+        .core_capabilities
         .iter()
         .map(|c| format!("- {}", c))
         .collect::<Vec<_>>()
@@ -301,8 +311,7 @@ pub fn add_custom_agent(agent: AddAgentRequest) -> Result<PersonaInfo, String> {
         capabilities = capabilities_str,
     );
 
-    fs::write(&file_path, &content)
-        .map_err(|e| format!("Failed to write agent: {}", e))?;
+    fs::write(&file_path, &content).map_err(|e| format!("Failed to write agent: {}", e))?;
 
     Ok(PersonaInfo {
         id: format!("custom:{}", slug),
@@ -323,8 +332,7 @@ pub fn remove_custom_agent(agent_id: String) -> Result<bool, String> {
     let file_path = get_custom_agents_dir().join(format!("{}.md", slug));
 
     if file_path.exists() {
-        fs::remove_file(&file_path)
-            .map_err(|e| format!("Failed to remove agent: {}", e))?;
+        fs::remove_file(&file_path).map_err(|e| format!("Failed to remove agent: {}", e))?;
     }
 
     Ok(true)
@@ -339,8 +347,7 @@ pub fn list_custom_agents() -> Result<Vec<PersonaInfo>, String> {
     }
 
     let mut results = Vec::new();
-    let entries = fs::read_dir(&dir)
-        .map_err(|e| format!("Failed to read custom agents: {}", e))?;
+    let entries = fs::read_dir(&dir).map_err(|e| format!("Failed to read custom agents: {}", e))?;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -348,7 +355,8 @@ pub fn list_custom_agents() -> Result<Vec<PersonaInfo>, String> {
             let content = fs::read_to_string(&path).unwrap_or_default();
             let (name, role, expertise, capabilities) = parse_agent_md(&content);
 
-            let stem = path.file_stem()
+            let stem = path
+                .file_stem()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default();
 
@@ -380,8 +388,7 @@ pub fn list_custom_skills() -> Result<Vec<SkillInfo>, String> {
     }
 
     let mut results = Vec::new();
-    let entries = fs::read_dir(&dir)
-        .map_err(|e| format!("Failed to read custom skills: {}", e))?;
+    let entries = fs::read_dir(&dir).map_err(|e| format!("Failed to read custom skills: {}", e))?;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -389,7 +396,8 @@ pub fn list_custom_skills() -> Result<Vec<SkillInfo>, String> {
             continue;
         }
 
-        let dir_name = path.file_name()
+        let dir_name = path
+            .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_default();
 
@@ -403,7 +411,11 @@ pub fn list_custom_skills() -> Result<Vec<SkillInfo>, String> {
 
         results.push(SkillInfo {
             id: format!("custom:{}", dir_name),
-            name: if name.is_empty() { dir_name.clone() } else { name },
+            name: if name.is_empty() {
+                dir_name.clone()
+            } else {
+                name
+            },
             category: "custom".to_string(),
             description,
             source: "custom".to_string(),
@@ -448,19 +460,19 @@ fn load_custom_workflows_file() -> Vec<WorkflowInfo> {
 fn save_custom_workflows_file(workflows: &[WorkflowInfo]) -> Result<(), String> {
     let path = get_custom_workflows_path();
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create dir: {}", e))?;
+        fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {}", e))?;
     }
-    let json = serde_json::to_string_pretty(workflows)
-        .map_err(|e| format!("Serialize error: {}", e))?;
-    fs::write(&path, &json)
-        .map_err(|e| format!("Write error: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(workflows).map_err(|e| format!("Serialize error: {}", e))?;
+    fs::write(&path, &json).map_err(|e| format!("Write error: {}", e))?;
     Ok(())
 }
 
 #[command]
 pub fn add_custom_workflow(workflow: AddWorkflowRequest) -> Result<WorkflowInfo, String> {
-    let slug = workflow.name.to_lowercase()
+    let slug = workflow
+        .name
+        .to_lowercase()
         .replace(' ', "-")
         .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
 
@@ -506,7 +518,10 @@ pub fn list_custom_workflows() -> Result<Vec<WorkflowInfo>, String> {
 // ===== Update Operations =====
 
 #[command]
-pub fn update_custom_agent(agent_id: String, agent: AddAgentRequest) -> Result<PersonaInfo, String> {
+pub fn update_custom_agent(
+    agent_id: String,
+    agent: AddAgentRequest,
+) -> Result<PersonaInfo, String> {
     let slug = agent_id.strip_prefix("custom:").unwrap_or(&agent_id);
     let dir = get_custom_agents_dir();
     let file_path = dir.join(format!("{}.md", slug));
@@ -515,13 +530,15 @@ pub fn update_custom_agent(agent_id: String, agent: AddAgentRequest) -> Result<P
         return Err(format!("Agent not found: {}", agent_id));
     }
 
-    let mental_models_str = agent.mental_models
+    let mental_models_str = agent
+        .mental_models
         .iter()
         .map(|m| format!("- {}", m))
         .collect::<Vec<_>>()
         .join("\n");
 
-    let capabilities_str = agent.core_capabilities
+    let capabilities_str = agent
+        .core_capabilities
         .iter()
         .map(|c| format!("- {}", c))
         .collect::<Vec<_>>()
@@ -544,8 +561,7 @@ pub fn update_custom_agent(agent_id: String, agent: AddAgentRequest) -> Result<P
         capabilities = capabilities_str,
     );
 
-    fs::write(&file_path, &content)
-        .map_err(|e| format!("Failed to write agent: {}", e))?;
+    fs::write(&file_path, &content).map_err(|e| format!("Failed to write agent: {}", e))?;
 
     Ok(PersonaInfo {
         id: format!("custom:{}", slug),
@@ -591,7 +607,10 @@ pub fn update_custom_skill(skill_id: String, skill: AddSkillRequest) -> Result<S
 }
 
 #[command]
-pub fn update_custom_workflow(workflow_id: String, workflow: AddWorkflowRequest) -> Result<WorkflowInfo, String> {
+pub fn update_custom_workflow(
+    workflow_id: String,
+    workflow: AddWorkflowRequest,
+) -> Result<WorkflowInfo, String> {
     let mut all = load_custom_workflows_file();
     let idx = all.iter().position(|w| w.id == workflow_id);
 

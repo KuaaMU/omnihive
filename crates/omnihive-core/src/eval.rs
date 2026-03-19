@@ -183,8 +183,7 @@ pub fn eval_from_dir(dir: &Path) -> Result<EvalReport, String> {
 
     let mut all_events = Vec::new();
 
-    let entries = std::fs::read_dir(dir)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
 
     for entry in entries {
         let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
@@ -206,12 +205,23 @@ pub fn eval_from_dir(dir: &Path) -> Result<EvalReport, String> {
 pub fn format_report(report: &EvalReport) -> String {
     let mut out = String::new();
     out.push_str("=== Omnihive Eval Report ===\n\n");
-    out.push_str(&format!("Tasks:        {} total, {} success, {} failed\n",
-        report.total_tasks, report.successful_tasks, report.failed_tasks));
-    out.push_str(&format!("Success Rate: {:.1}%\n", report.success_rate * 100.0));
-    out.push_str(&format!("First-Pass:   {:.1}%\n", report.first_pass_rate * 100.0));
+    out.push_str(&format!(
+        "Tasks:        {} total, {} success, {} failed\n",
+        report.total_tasks, report.successful_tasks, report.failed_tasks
+    ));
+    out.push_str(&format!(
+        "Success Rate: {:.1}%\n",
+        report.success_rate * 100.0
+    ));
+    out.push_str(&format!(
+        "First-Pass:   {:.1}%\n",
+        report.first_pass_rate * 100.0
+    ));
     out.push_str(&format!("Total Cost:   ${:.4}\n", report.total_cost));
-    out.push_str(&format!("Avg Cost:     ${:.4}/task\n", report.avg_cost_per_task));
+    out.push_str(&format!(
+        "Avg Cost:     ${:.4}/task\n",
+        report.avg_cost_per_task
+    ));
     out.push_str(&format!("Latency P50:  {}ms\n", report.latency_p50_ms));
     out.push_str(&format!("Latency P95:  {}ms\n", report.latency_p95_ms));
     out.push_str(&format!("Total Steps:  {}\n", report.total_steps));
@@ -222,8 +232,13 @@ pub fn format_report(report: &EvalReport) -> String {
         for task in &report.tasks {
             out.push_str(&format!(
                 "  {} | {} | {} steps | {} retries | ${:.4} | {}ms | first_pass={}\n",
-                task.task_id, task.status, task.steps, task.retries,
-                task.cost, task.latency_ms, task.first_pass
+                task.task_id,
+                task.status,
+                task.steps,
+                task.retries,
+                task.cost,
+                task.latency_ms,
+                task.first_pass
             ));
         }
     }
@@ -357,7 +372,10 @@ mod tests {
     #[test]
     fn test_evaluate_task_success() {
         let events = vec![
-            TraceEvent::new("tr", "step_completed").with_task("t-1").with_cost(0.01).with_latency(1000),
+            TraceEvent::new("tr", "step_completed")
+                .with_task("t-1")
+                .with_cost(0.01)
+                .with_latency(1000),
             TraceEvent::new("tr", "task_completed").with_task("t-1"),
         ];
         let refs: Vec<&TraceEvent> = events.iter().collect();
@@ -370,7 +388,9 @@ mod tests {
     #[test]
     fn test_evaluate_task_failed() {
         let events = vec![
-            TraceEvent::new("tr", "step_failed").with_task("t-1").with_latency(500),
+            TraceEvent::new("tr", "step_failed")
+                .with_task("t-1")
+                .with_latency(500),
             TraceEvent::new("tr", "task_failed").with_task("t-1"),
         ];
         let refs: Vec<&TraceEvent> = events.iter().collect();

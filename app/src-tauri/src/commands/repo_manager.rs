@@ -1,6 +1,6 @@
+use crate::models::*;
 use std::fs;
 use tauri::command;
-use crate::models::*;
 
 // ===== GitHub API Helpers =====
 
@@ -26,8 +26,7 @@ fn github_raw_get(url: &str) -> Result<String, String> {
         .set("User-Agent", "omnihive")
         .call()
         .map_err(|e| format!("Download error: {}", e))?;
-    resp.into_string()
-        .map_err(|e| format!("Read error: {}", e))
+    resp.into_string().map_err(|e| format!("Read error: {}", e))
 }
 
 // ===== Repo CRUD Commands =====
@@ -64,7 +63,9 @@ pub fn remove_skill_repo(repo_id: String) -> Result<AppSettings, String> {
 #[command]
 pub fn browse_repo(repo_id: String, subpath: String) -> Result<Vec<RepoItem>, String> {
     let settings = crate::commands::settings::load_settings()?;
-    let repo = settings.skill_repos.iter()
+    let repo = settings
+        .skill_repos
+        .iter()
         .find(|r| r.id == repo_id)
         .ok_or_else(|| format!("Repository '{}' not found", repo_id))?;
 
@@ -79,7 +80,8 @@ pub fn browse_repo(repo_id: String, subpath: String) -> Result<Vec<RepoItem>, St
     let url = github_contents_url(&repo.owner, &repo.repo, &full_path, &repo.branch);
     let json = github_api_get(&url)?;
 
-    let items = json.as_array()
+    let items = json
+        .as_array()
         .ok_or_else(|| "Expected array from GitHub API".to_string())?;
 
     let mut results = Vec::new();
@@ -116,14 +118,17 @@ pub fn browse_repo(repo_id: String, subpath: String) -> Result<Vec<RepoItem>, St
 #[command]
 pub fn browse_repo_skills(repo_id: String) -> Result<Vec<RepoItem>, String> {
     let settings = crate::commands::settings::load_settings()?;
-    let repo = settings.skill_repos.iter()
+    let repo = settings
+        .skill_repos
+        .iter()
         .find(|r| r.id == repo_id)
         .ok_or_else(|| format!("Repository '{}' not found", repo_id))?;
 
     let url = github_contents_url(&repo.owner, &repo.repo, &repo.path, &repo.branch);
     let json = github_api_get(&url)?;
 
-    let items = json.as_array()
+    let items = json
+        .as_array()
         .ok_or_else(|| "Expected array from GitHub API".to_string())?;
 
     let mut results = Vec::new();
@@ -139,7 +144,8 @@ pub fn browse_repo_skills(repo_id: String) -> Result<Vec<RepoItem>, String> {
 
         // Try to fetch SKILL.md description
         let skill_md_url = github_contents_url(
-            &repo.owner, &repo.repo,
+            &repo.owner,
+            &repo.repo,
             &format!("{}/SKILL.md", path),
             &repo.branch,
         );
@@ -175,7 +181,9 @@ pub fn browse_repo_skills(repo_id: String) -> Result<Vec<RepoItem>, String> {
 #[command]
 pub fn install_repo_skill(repo_id: String, skill_path: String) -> Result<SkillInfo, String> {
     let settings = crate::commands::settings::load_settings()?;
-    let repo = settings.skill_repos.iter()
+    let repo = settings
+        .skill_repos
+        .iter()
         .find(|r| r.id == repo_id)
         .ok_or_else(|| format!("Repository '{}' not found", repo_id))?;
 
@@ -183,12 +191,14 @@ pub fn install_repo_skill(repo_id: String, skill_path: String) -> Result<SkillIn
     let url = github_contents_url(&repo.owner, &repo.repo, &skill_path, &repo.branch);
     let json = github_api_get(&url)?;
 
-    let items = json.as_array()
+    let items = json
+        .as_array()
         .ok_or_else(|| "Expected array from GitHub API".to_string())?;
 
     // Determine skill name from path
-    let skill_name = skill_path.split('/')
-        .last()
+    let skill_name = skill_path
+        .split('/')
+        .next_back()
         .unwrap_or("unknown-skill")
         .to_string();
 

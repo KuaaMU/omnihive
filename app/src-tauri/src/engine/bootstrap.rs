@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::models::*;
+use std::collections::HashMap;
 
 // Domain keyword mappings
 const SAAS_KEYWORDS: &[&str] = &["saas", "subscription", "platform", "dashboard", "analytics"];
@@ -52,18 +52,62 @@ fn role_to_model(role: &str) -> ModelTier {
 // Role → Default skills
 fn role_default_skills(role: &str) -> Vec<String> {
     let skills: &[&str] = match role {
-        "ceo" => &["deep-research", "product-strategist", "market-sizing", "startup-financial-modeling", "micro-saas-launcher", "premortem"],
+        "ceo" => &[
+            "deep-research",
+            "product-strategist",
+            "market-sizing",
+            "startup-financial-modeling",
+            "micro-saas-launcher",
+            "premortem",
+        ],
         "fullstack" => &["code-review-security", "devops", "senior-qa"],
         "devops" => &["devops", "security-audit", "code-review-security"],
-        "critic" => &["premortem", "competitive-intelligence", "financial-unit-economics", "deep-research"],
-        "product" => &["product-strategist", "deep-research", "seo-content-strategist"],
+        "critic" => &[
+            "premortem",
+            "competitive-intelligence",
+            "financial-unit-economics",
+            "deep-research",
+        ],
+        "product" => &[
+            "product-strategist",
+            "deep-research",
+            "seo-content-strategist",
+        ],
         "ui" => &["product-strategist", "seo-content-strategist"],
         "qa" => &["senior-qa", "code-review-security", "security-audit"],
-        "marketing" => &["seo-content-strategist", "market-sizing", "competitive-intelligence", "product-strategist", "deep-research"],
-        "operations" => &["micro-saas-launcher", "startup-financial-modeling", "market-sizing", "product-strategist", "deep-research"],
-        "sales" => &["market-sizing", "competitive-intelligence", "pricing-strategy", "deep-research"],
-        "cfo" => &["financial-unit-economics", "pricing-strategy", "startup-financial-modeling", "market-sizing"],
-        "research" => &["deep-research", "competitive-intelligence", "market-sizing", "web-scraping", "seo-content-strategist"],
+        "marketing" => &[
+            "seo-content-strategist",
+            "market-sizing",
+            "competitive-intelligence",
+            "product-strategist",
+            "deep-research",
+        ],
+        "operations" => &[
+            "micro-saas-launcher",
+            "startup-financial-modeling",
+            "market-sizing",
+            "product-strategist",
+            "deep-research",
+        ],
+        "sales" => &[
+            "market-sizing",
+            "competitive-intelligence",
+            "pricing-strategy",
+            "deep-research",
+        ],
+        "cfo" => &[
+            "financial-unit-economics",
+            "pricing-strategy",
+            "startup-financial-modeling",
+            "market-sizing",
+        ],
+        "research" => &[
+            "deep-research",
+            "competitive-intelligence",
+            "market-sizing",
+            "web-scraping",
+            "seo-content-strategist",
+        ],
         _ => &[],
     };
     skills.iter().map(|s| s.to_string()).collect()
@@ -101,10 +145,19 @@ pub fn analyze_seed(prompt: &str) -> SeedAnalysis {
     };
 
     // Detect complexity
-    let complexity_keywords_complex = ["enterprise", "complex", "advanced", "multi-tenant", "distributed"];
+    let complexity_keywords_complex = [
+        "enterprise",
+        "complex",
+        "advanced",
+        "multi-tenant",
+        "distributed",
+    ];
     let complexity_keywords_simple = ["simple", "basic", "minimal", "mvp", "prototype"];
 
-    let complexity = if complexity_keywords_complex.iter().any(|k| lower.contains(k)) {
+    let complexity = if complexity_keywords_complex
+        .iter()
+        .any(|k| lower.contains(k))
+    {
         Complexity::Complex
     } else if complexity_keywords_simple.iter().any(|k| lower.contains(k)) {
         Complexity::Simple
@@ -114,12 +167,24 @@ pub fn analyze_seed(prompt: &str) -> SeedAnalysis {
 
     // Detect features
     let feature_map: HashMap<&str, &str> = HashMap::from([
-        ("auth", "authentication"), ("login", "authentication"), ("signup", "authentication"),
-        ("payment", "payments"), ("billing", "payments"), ("subscri", "payments"),
-        ("track", "tracking"), ("monitor", "monitoring"), ("report", "reporting"),
-        ("dashboard", "dashboard"), ("analytics", "analytics"), ("api", "api"),
-        ("notification", "notifications"), ("email", "email"), ("search", "search"),
-        ("chat", "real-time"), ("realtime", "real-time"), ("websocket", "real-time"),
+        ("auth", "authentication"),
+        ("login", "authentication"),
+        ("signup", "authentication"),
+        ("payment", "payments"),
+        ("billing", "payments"),
+        ("subscri", "payments"),
+        ("track", "tracking"),
+        ("monitor", "monitoring"),
+        ("report", "reporting"),
+        ("dashboard", "dashboard"),
+        ("analytics", "analytics"),
+        ("api", "api"),
+        ("notification", "notifications"),
+        ("email", "email"),
+        ("search", "search"),
+        ("chat", "real-time"),
+        ("realtime", "real-time"),
+        ("websocket", "real-time"),
     ]);
     let mut features: Vec<String> = Vec::new();
     for (keyword, feature) in &feature_map {
@@ -152,12 +217,38 @@ fn select_roles(_domain: &str, complexity: &Complexity) -> Vec<String> {
             roles.push("marketing".to_string());
         }
         Complexity::Medium => {
-            roles.extend(["critic", "product", "ui", "qa", "marketing", "operations", "sales", "cfo", "research"]
-                .iter().map(|r| r.to_string()));
+            roles.extend(
+                [
+                    "critic",
+                    "product",
+                    "ui",
+                    "qa",
+                    "marketing",
+                    "operations",
+                    "sales",
+                    "cfo",
+                    "research",
+                ]
+                .iter()
+                .map(|r| r.to_string()),
+            );
         }
         Complexity::Complex => {
-            roles.extend(["critic", "product", "ui", "qa", "marketing", "operations", "sales", "cfo", "research"]
-                .iter().map(|r| r.to_string()));
+            roles.extend(
+                [
+                    "critic",
+                    "product",
+                    "ui",
+                    "qa",
+                    "marketing",
+                    "operations",
+                    "sales",
+                    "cfo",
+                    "research",
+                ]
+                .iter()
+                .map(|r| r.to_string()),
+            );
         }
     }
 
@@ -172,28 +263,36 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
     let persona_map = role_to_persona();
 
     // Build agents
-    let agents: Vec<AgentConfig> = analysis.suggested_roles.iter().map(|role| {
-        let persona_id = persona_map.get(role.as_str()).unwrap_or(&"generic");
-        AgentConfig {
-            role: role.clone(),
-            persona: PersonaRef {
-                id: persona_id.to_string(),
-                custom_instructions: String::new(),
-            },
-            skills: role_default_skills(role),
-            model: role_to_model(role),
-            layer: role_to_layer(role),
-            decides: Vec::new(),
-        }
-    }).collect();
+    let agents: Vec<AgentConfig> = analysis
+        .suggested_roles
+        .iter()
+        .map(|role| {
+            let persona_id = persona_map.get(role.as_str()).unwrap_or(&"generic");
+            AgentConfig {
+                role: role.clone(),
+                persona: PersonaRef {
+                    id: persona_id.to_string(),
+                    custom_instructions: String::new(),
+                },
+                skills: role_default_skills(role),
+                model: role_to_model(role),
+                layer: role_to_layer(role),
+                decides: Vec::new(),
+            }
+        })
+        .collect();
 
     // Build default workflows
-    let all_roles: Vec<&str> = analysis.suggested_roles.iter().map(|s| s.as_str()).collect();
+    let all_roles: Vec<&str> = analysis
+        .suggested_roles
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
 
     let mut workflows = Vec::new();
 
     // Only include workflows where all chain roles exist
-    let pricing_chain = vec!["research", "cfo", "product", "marketing", "critic", "cfo"];
+    let pricing_chain = ["research", "cfo", "product", "marketing", "critic", "cfo"];
     if pricing_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "pricing-monetization".to_string(),
@@ -204,7 +303,14 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
         });
     }
 
-    let launch_chain = vec!["marketing", "research", "sales", "marketing", "devops", "ceo"];
+    let launch_chain = [
+        "marketing",
+        "research",
+        "sales",
+        "marketing",
+        "devops",
+        "ceo",
+    ];
     if launch_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "product-launch".to_string(),
@@ -215,7 +321,7 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
         });
     }
 
-    let review_chain = vec!["research", "cfo", "marketing", "qa", "ceo", "critic"];
+    let review_chain = ["research", "cfo", "marketing", "qa", "ceo", "critic"];
     if review_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "weekly-review".to_string(),
@@ -229,7 +335,8 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
     // Sanitize company name from seed
     let name = format!(
         "{} AI Co.",
-        prompt.split_whitespace()
+        prompt
+            .split_whitespace()
             .take(4)
             .collect::<Vec<_>>()
             .join("-")
@@ -239,7 +346,10 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
         company: CompanyConfig {
             name,
             mission: format!("Build and ship a profitable saas product: {}", prompt),
-            description: format!("Domain: {}. Target: {}. Complexity: {:?}.", analysis.domain, analysis.audience, analysis.complexity),
+            description: format!(
+                "Domain: {}. Target: {}. Complexity: {:?}.",
+                analysis.domain, analysis.audience, analysis.complexity
+            ),
             seed_prompt: prompt.to_string(),
         },
         org: OrgConfig { agents },

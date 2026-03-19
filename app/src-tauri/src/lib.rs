@@ -3,16 +3,16 @@ pub mod engine;
 pub mod models;
 
 use commands::bootstrap as bootstrap_cmd;
-use commands::memory as memory_cmd;
-use commands::runtime as runtime_cmd;
 use commands::library as library_cmd;
-use commands::settings as settings_cmd;
-use commands::system as system_cmd;
+use commands::mcp as mcp_cmd;
+use commands::memory as memory_cmd;
 use commands::provider_detect as provider_detect_cmd;
 use commands::provider_presets as provider_presets_cmd;
-use commands::mcp as mcp_cmd;
-use commands::skill_manager as skill_mgr_cmd;
 use commands::repo_manager as repo_mgr_cmd;
+use commands::runtime as runtime_cmd;
+use commands::settings as settings_cmd;
+use commands::skill_manager as skill_mgr_cmd;
+use commands::system as system_cmd;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

@@ -1,4 +1,4 @@
-/// Structured logging initialization using the `tracing` crate.
+//! Structured logging initialization using the `tracing` crate.
 
 use std::path::Path;
 
@@ -12,8 +12,8 @@ pub fn init_logging(log_dir: Option<&Path>) {
     use tracing_subscriber::util::SubscriberInitExt;
     use tracing_subscriber::{fmt, EnvFilter};
 
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("omnihive=info"));
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("omnihive=info"));
 
     let stderr_layer = fmt::layer()
         .with_writer(std::io::stderr)

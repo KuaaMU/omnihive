@@ -1,7 +1,7 @@
+use crate::engine::api_client;
+use crate::models::*;
 use std::path::PathBuf;
 use tauri::command;
-use crate::models::*;
-use crate::engine::api_client;
 
 fn get_settings_path() -> PathBuf {
     dirs::data_dir()
@@ -47,10 +47,10 @@ pub fn load_settings() -> Result<AppSettings, String> {
         return Ok(settings);
     }
 
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read settings: {}", e))?;
-    let settings: AppSettings = serde_json::from_str(&content)
-        .map_err(|e| format!("Parse error: {}", e))?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {}", e))?;
+    let settings: AppSettings =
+        serde_json::from_str(&content).map_err(|e| format!("Parse error: {}", e))?;
     Ok(settings)
 }
 
@@ -61,10 +61,9 @@ pub fn save_settings(settings: AppSettings) -> Result<bool, String> {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("Failed to create settings dir: {}", e))?;
     }
-    let json = serde_json::to_string_pretty(&settings)
-        .map_err(|e| format!("Serialize error: {}", e))?;
-    std::fs::write(&path, &json)
-        .map_err(|e| format!("Write error: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(&settings).map_err(|e| format!("Serialize error: {}", e))?;
+    std::fs::write(&path, &json).map_err(|e| format!("Write error: {}", e))?;
     Ok(true)
 }
 
@@ -88,7 +87,10 @@ pub fn add_provider(provider: AiProvider) -> Result<AppSettings, String> {
 pub fn update_provider(provider: AiProvider) -> Result<AppSettings, String> {
     let mut settings = load_settings()?;
 
-    let idx = settings.providers.iter().position(|p| p.id == provider.id)
+    let idx = settings
+        .providers
+        .iter()
+        .position(|p| p.id == provider.id)
         .ok_or_else(|| format!("Provider '{}' not found", provider.id))?;
 
     settings.providers[idx] = provider;
@@ -113,7 +115,10 @@ pub fn derive_api_config(provider_type: &str) -> (&'static str, &'static str) {
         "deepseek" => ("openai", "https://api.deepseek.com/v1"),
         "groq" => ("openai", "https://api.groq.com/openai/v1"),
         "mistral" => ("openai", "https://api.mistral.ai/v1"),
-        "google" | "gemini" => ("openai", "https://generativelanguage.googleapis.com/v1beta/openai"),
+        "google" | "gemini" => (
+            "openai",
+            "https://generativelanguage.googleapis.com/v1beta/openai",
+        ),
         _ => ("openai", ""),
     }
 }
@@ -137,7 +142,11 @@ pub fn test_provider(provider: AiProvider) -> Result<String, String> {
     };
 
     // Use provider's explicit api_format if set, otherwise derive from provider_type
-    let api_format = if !provider.api_format.is_empty() && provider.api_format != "anthropic" && provider.provider_type != "anthropic" && provider.provider_type != "claude" {
+    let api_format = if !provider.api_format.is_empty()
+        && provider.api_format != "anthropic"
+        && provider.provider_type != "anthropic"
+        && provider.provider_type != "claude"
+    {
         provider.api_format.clone()
     } else {
         derived_format.to_string()

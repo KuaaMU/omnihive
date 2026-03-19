@@ -3,8 +3,8 @@
 //! These models map the autonomous loop to a structured Task/Step hierarchy,
 //! enabling checkpoint/resume, trace correlation, and future CLI usage.
 
+use crate::engine::state_machine::{StepStatus, TaskStatus};
 use serde::{Deserialize, Serialize};
-use crate::engine::state_machine::{TaskStatus, StepStatus};
 
 // ===== Task =====
 
@@ -56,7 +56,10 @@ impl Task {
         let mut next = self.clone();
         next.status = status;
         next.updated_at = chrono::Local::now().format("%+").to_string();
-        if matches!(status, TaskStatus::Success | TaskStatus::Failed | TaskStatus::Cancelled) {
+        if matches!(
+            status,
+            TaskStatus::Success | TaskStatus::Failed | TaskStatus::Cancelled
+        ) {
             next.completed_at = Some(next.updated_at.clone());
         }
         next
@@ -126,12 +129,7 @@ impl Step {
     }
 
     /// Create a completed copy with token counts and preview.
-    pub fn completed(
-        &self,
-        input_tokens: u32,
-        output_tokens: u32,
-        preview: &str,
-    ) -> Self {
+    pub fn completed(&self, input_tokens: u32, output_tokens: u32, preview: &str) -> Self {
         let mut next = self.clone();
         next.status = StepStatus::Success;
         next.input_tokens = input_tokens;
@@ -329,7 +327,11 @@ mod tests {
 
     #[test]
     fn test_task_serde_roundtrip() {
-        let task = Task::new("/tmp/test", "build app", vec!["ceo".to_string(), "devops".to_string()]);
+        let task = Task::new(
+            "/tmp/test",
+            "build app",
+            vec!["ceo".to_string(), "devops".to_string()],
+        );
         let json = serde_json::to_string(&task).unwrap();
         let parsed: Task = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.task_id, task.task_id);

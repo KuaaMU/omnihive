@@ -28,19 +28,27 @@ impl ErrorCategory {
         if lower.contains("429") || lower.contains("rate limit") || lower.contains("too many") {
             return ErrorCategory::RateLimit;
         }
-        if lower.contains("500") || lower.contains("502") || lower.contains("503")
-            || lower.contains("server error") || lower.contains("internal error")
+        if lower.contains("500")
+            || lower.contains("502")
+            || lower.contains("503")
+            || lower.contains("server error")
+            || lower.contains("internal error")
         {
             return ErrorCategory::ServerError;
         }
-        if lower.contains("401") || lower.contains("403")
-            || lower.contains("unauthorized") || lower.contains("forbidden")
-            || lower.contains("invalid api key") || lower.contains("auth")
+        if lower.contains("401")
+            || lower.contains("403")
+            || lower.contains("unauthorized")
+            || lower.contains("forbidden")
+            || lower.contains("invalid api key")
+            || lower.contains("auth")
         {
             return ErrorCategory::AuthError;
         }
-        if lower.contains("400") || lower.contains("validation")
-            || lower.contains("invalid") || lower.contains("malformed")
+        if lower.contains("400")
+            || lower.contains("validation")
+            || lower.contains("invalid")
+            || lower.contains("malformed")
         {
             return ErrorCategory::ValidationError;
         }
@@ -119,45 +127,90 @@ mod tests {
 
     #[test]
     fn test_classify_timeout() {
-        assert_eq!(ErrorCategory::classify("Connection timed out after 30s"), ErrorCategory::Timeout);
-        assert_eq!(ErrorCategory::classify("Request timeout"), ErrorCategory::Timeout);
+        assert_eq!(
+            ErrorCategory::classify("Connection timed out after 30s"),
+            ErrorCategory::Timeout
+        );
+        assert_eq!(
+            ErrorCategory::classify("Request timeout"),
+            ErrorCategory::Timeout
+        );
     }
 
     #[test]
     fn test_classify_rate_limit() {
-        assert_eq!(ErrorCategory::classify("HTTP 429 Too Many Requests"), ErrorCategory::RateLimit);
-        assert_eq!(ErrorCategory::classify("Rate limit exceeded"), ErrorCategory::RateLimit);
+        assert_eq!(
+            ErrorCategory::classify("HTTP 429 Too Many Requests"),
+            ErrorCategory::RateLimit
+        );
+        assert_eq!(
+            ErrorCategory::classify("Rate limit exceeded"),
+            ErrorCategory::RateLimit
+        );
     }
 
     #[test]
     fn test_classify_server_error() {
-        assert_eq!(ErrorCategory::classify("HTTP 500 Internal Server Error"), ErrorCategory::ServerError);
-        assert_eq!(ErrorCategory::classify("502 Bad Gateway"), ErrorCategory::ServerError);
-        assert_eq!(ErrorCategory::classify("503 Service Unavailable"), ErrorCategory::ServerError);
+        assert_eq!(
+            ErrorCategory::classify("HTTP 500 Internal Server Error"),
+            ErrorCategory::ServerError
+        );
+        assert_eq!(
+            ErrorCategory::classify("502 Bad Gateway"),
+            ErrorCategory::ServerError
+        );
+        assert_eq!(
+            ErrorCategory::classify("503 Service Unavailable"),
+            ErrorCategory::ServerError
+        );
     }
 
     #[test]
     fn test_classify_auth_error() {
-        assert_eq!(ErrorCategory::classify("HTTP 401 Unauthorized"), ErrorCategory::AuthError);
-        assert_eq!(ErrorCategory::classify("Invalid API key"), ErrorCategory::AuthError);
-        assert_eq!(ErrorCategory::classify("403 Forbidden"), ErrorCategory::AuthError);
+        assert_eq!(
+            ErrorCategory::classify("HTTP 401 Unauthorized"),
+            ErrorCategory::AuthError
+        );
+        assert_eq!(
+            ErrorCategory::classify("Invalid API key"),
+            ErrorCategory::AuthError
+        );
+        assert_eq!(
+            ErrorCategory::classify("403 Forbidden"),
+            ErrorCategory::AuthError
+        );
     }
 
     #[test]
     fn test_classify_validation_error() {
-        assert_eq!(ErrorCategory::classify("400 Bad Request: malformed JSON"), ErrorCategory::ValidationError);
-        assert_eq!(ErrorCategory::classify("Validation failed"), ErrorCategory::ValidationError);
+        assert_eq!(
+            ErrorCategory::classify("400 Bad Request: malformed JSON"),
+            ErrorCategory::ValidationError
+        );
+        assert_eq!(
+            ErrorCategory::classify("Validation failed"),
+            ErrorCategory::ValidationError
+        );
     }
 
     #[test]
     fn test_classify_policy_deny() {
-        assert_eq!(ErrorCategory::classify("Policy denied this action"), ErrorCategory::PolicyDeny);
-        assert_eq!(ErrorCategory::classify("Command blocked by guardrails"), ErrorCategory::PolicyDeny);
+        assert_eq!(
+            ErrorCategory::classify("Policy denied this action"),
+            ErrorCategory::PolicyDeny
+        );
+        assert_eq!(
+            ErrorCategory::classify("Command blocked by guardrails"),
+            ErrorCategory::PolicyDeny
+        );
     }
 
     #[test]
     fn test_classify_unknown() {
-        assert_eq!(ErrorCategory::classify("Something weird happened"), ErrorCategory::Unknown);
+        assert_eq!(
+            ErrorCategory::classify("Something weird happened"),
+            ErrorCategory::Unknown
+        );
     }
 
     // --- is_retryable ---

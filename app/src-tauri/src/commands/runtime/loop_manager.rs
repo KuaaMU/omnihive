@@ -1,17 +1,17 @@
-use std::path::PathBuf;
+use super::credentials::ApiCredentials;
+use super::cycle_executor::{load_cycle_history, run_api_cycle, save_cycle_history};
+use super::status::emit_project_event;
+use crate::engine::checkpoint::Checkpoint;
+use crate::engine::state_machine::{TaskEvent, TaskStatus};
+use crate::engine::task_model::{Step, Task};
+use crate::engine::{checkpoint, extract, state, state_machine, task_model};
+use crate::models::CycleResult;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use crate::engine::{extract, state, state_machine, task_model, checkpoint};
-use crate::engine::state_machine::{TaskStatus, TaskEvent};
-use crate::engine::task_model::{Task, Step};
-use crate::engine::checkpoint::Checkpoint;
-use crate::models::CycleResult;
-use super::credentials::ApiCredentials;
-use super::cycle_executor::{run_api_cycle, load_cycle_history, save_cycle_history};
-use super::status::emit_project_event;
 
 // ===== Running Loop Registry =====
 
@@ -65,7 +65,7 @@ pub(crate) fn start_loop_impl(
 
 // ===== Stop Loop =====
 
-pub(crate) fn stop_loop_impl(project_dir: &str, dir: &PathBuf) -> Result<bool, String> {
+pub(crate) fn stop_loop_impl(project_dir: &str, dir: &Path) -> Result<bool, String> {
     let stopped = {
         let loops = RUNNING_LOOPS.lock().map_err(|e| e.to_string())?;
         if let Some(flag) = loops.get(project_dir) {
@@ -87,6 +87,7 @@ pub(crate) fn stop_loop_impl(project_dir: &str, dir: &PathBuf) -> Result<bool, S
 
 // ===== Background Loop =====
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(credentials, stop_flag), fields(agents = %agent_roles.len()))]
 fn run_loop(
     dir: PathBuf,
@@ -155,7 +156,14 @@ fn run_loop(
                     .unwrap_or(TaskStatus::Cancelled),
             );
             task_model::write_task_state(&dir, &current_task).ok();
-            state::write_state(&dir, "stopped", cycle, cycle, current_task.consecutive_errors).ok();
+            state::write_state(
+                &dir,
+                "stopped",
+                cycle,
+                cycle,
+                current_task.consecutive_errors,
+            )
+            .ok();
             break;
         }
 
@@ -177,11 +185,23 @@ fn run_loop(
 
         state::append_log(
             &dir,
-            &format!("=== Cycle {} | Agent: {} | step={} ===", cycle, current_agent, &step_id[..8]),
+            &format!(
+                "=== Cycle {} | Agent: {} | step={} ===",
+                cycle,
+                current_agent,
+                &step_id[..8]
+            ),
         );
 
         let started_at = chrono::Local::now().format("%+").to_string();
-        state::write_state(&dir, "running", cycle, cycle, current_task.consecutive_errors).ok();
+        state::write_state(
+            &dir,
+            "running",
+            cycle,
+            cycle,
+            current_task.consecutive_errors,
+        )
+        .ok();
 
         let result = run_api_cycle(
             &dir,
@@ -219,7 +239,10 @@ fn run_loop(
                     &project_dir,
                     "cycle_complete",
                     current_agent,
-                    &format!("Cycle {} completed ({}+{} tokens)", cycle, input_tokens, output_tokens),
+                    &format!(
+                        "Cycle {} completed ({}+{} tokens)",
+                        cycle, input_tokens, output_tokens
+                    ),
                     &preview,
                 );
 
@@ -232,7 +255,10 @@ fn run_loop(
                     started_at,
                     completed_at,
                     agent_role: current_agent.clone(),
-                    action: format!("{} analysis ({}+{} tokens)", current_agent, input_tokens, output_tokens),
+                    action: format!(
+                        "{} analysis ({}+{} tokens)",
+                        current_agent, input_tokens, output_tokens
+                    ),
                     outcome: preview,
                     files_changed: vec![],
                     error: None,
@@ -247,7 +273,9 @@ fn run_loop(
                     &dir,
                     &format!(
                         "ERROR: Cycle {} failed: {} (consecutive: {})",
-                        cycle, err, current_task.consecutive_errors + 1
+                        cycle,
+                        err,
+                        current_task.consecutive_errors + 1
                     ),
                 );
 
@@ -255,7 +283,11 @@ fn run_loop(
                     &project_dir,
                     "cycle_error",
                     current_agent,
-                    &format!("Cycle {} failed (error {})", cycle, current_task.consecutive_errors + 1),
+                    &format!(
+                        "Cycle {} failed (error {})",
+                        cycle,
+                        current_task.consecutive_errors + 1
+                    ),
                     &extract::truncate_string(&err, 200),
                 );
 
@@ -281,11 +313,21 @@ fn run_loop(
                         ),
                     );
                     current_task = current_task.with_status(
-                        state_machine::transition(current_task.status, TaskEvent::MaxRetriesExceeded)
-                            .unwrap_or(TaskStatus::Failed),
+                        state_machine::transition(
+                            current_task.status,
+                            TaskEvent::MaxRetriesExceeded,
+                        )
+                        .unwrap_or(TaskStatus::Failed),
                     );
                     task_model::write_task_state(&dir, &current_task).ok();
-                    state::write_state(&dir, "error", cycle, cycle, current_task.consecutive_errors).ok();
+                    state::write_state(
+                        &dir,
+                        "error",
+                        cycle,
+                        cycle,
+                        current_task.consecutive_errors,
+                    )
+                    .ok();
                     save_cycle_history(&dir, &history);
                     cleanup_loop(&project_dir);
                     return;
@@ -295,12 +337,19 @@ fn run_loop(
 
         // Persist state after each cycle
         task_model::write_task_state(&dir, &current_task).ok();
-        state::write_state(&dir, "running", cycle, cycle, current_task.consecutive_errors).ok();
+        state::write_state(
+            &dir,
+            "running",
+            cycle,
+            cycle,
+            current_task.consecutive_errors,
+        )
+        .ok();
         save_cycle_history(&dir, &history);
 
         // Save checkpoint for crash recovery
-        let consensus = std::fs::read_to_string(dir.join("memories/consensus.md"))
-            .unwrap_or_default();
+        let consensus =
+            std::fs::read_to_string(dir.join("memories/consensus.md")).unwrap_or_default();
         let cp = Checkpoint::from_task(&current_task, &consensus);
         checkpoint::save_checkpoint(&dir, &cp).ok();
 

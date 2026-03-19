@@ -1,5 +1,5 @@
-use tauri::command;
 use crate::models::*;
+use tauri::command;
 
 /// List all configured MCP servers from settings.
 #[command]
@@ -57,7 +57,10 @@ pub fn get_mcp_presets() -> Result<Vec<McpPreset>, String> {
             description: "Search the web using Tavily, Brave, or SerpAPI".to_string(),
             server_type: "stdio".to_string(),
             command: "npx".to_string(),
-            args: vec!["-y".to_string(), "@anthropic/mcp-server-web-search".to_string()],
+            args: vec![
+                "-y".to_string(),
+                "@anthropic/mcp-server-web-search".to_string(),
+            ],
             env_keys: vec!["TAVILY_API_KEY".to_string()],
             category: "search".to_string(),
         },
@@ -67,7 +70,10 @@ pub fn get_mcp_presets() -> Result<Vec<McpPreset>, String> {
             description: "Read, write, and manage files on the local filesystem".to_string(),
             server_type: "stdio".to_string(),
             command: "npx".to_string(),
-            args: vec!["-y".to_string(), "@anthropic/mcp-server-filesystem".to_string()],
+            args: vec![
+                "-y".to_string(),
+                "@anthropic/mcp-server-filesystem".to_string(),
+            ],
             env_keys: vec![],
             category: "tools".to_string(),
         },
@@ -97,7 +103,10 @@ pub fn get_mcp_presets() -> Result<Vec<McpPreset>, String> {
             description: "Query and manage PostgreSQL databases".to_string(),
             server_type: "stdio".to_string(),
             command: "npx".to_string(),
-            args: vec!["-y".to_string(), "@anthropic/mcp-server-postgres".to_string()],
+            args: vec![
+                "-y".to_string(),
+                "@anthropic/mcp-server-postgres".to_string(),
+            ],
             env_keys: vec!["DATABASE_URL".to_string()],
             category: "database".to_string(),
         },
@@ -107,7 +116,10 @@ pub fn get_mcp_presets() -> Result<Vec<McpPreset>, String> {
             description: "Search the web using the Brave Search API".to_string(),
             server_type: "stdio".to_string(),
             command: "npx".to_string(),
-            args: vec!["-y".to_string(), "@anthropic/mcp-server-brave-search".to_string()],
+            args: vec![
+                "-y".to_string(),
+                "@anthropic/mcp-server-brave-search".to_string(),
+            ],
             env_keys: vec!["BRAVE_API_KEY".to_string()],
             category: "search".to_string(),
         },
@@ -124,10 +136,14 @@ pub fn get_mcp_presets() -> Result<Vec<McpPreset>, String> {
         McpPreset {
             id: "puppeteer".to_string(),
             name: "Puppeteer".to_string(),
-            description: "Browser automation - navigate, screenshot, interact with web pages".to_string(),
+            description: "Browser automation - navigate, screenshot, interact with web pages"
+                .to_string(),
             server_type: "stdio".to_string(),
             command: "npx".to_string(),
-            args: vec!["-y".to_string(), "@anthropic/mcp-server-puppeteer".to_string()],
+            args: vec![
+                "-y".to_string(),
+                "@anthropic/mcp-server-puppeteer".to_string(),
+            ],
             env_keys: vec![],
             category: "tools".to_string(),
         },

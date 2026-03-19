@@ -14,21 +14,66 @@ impl FileSystemTool {
         Self
     }
 
-    /// Resolve and validate path within workspace.
-    fn resolve_path(path_str: &str, workspace: &str) -> Result<PathBuf, ToolError> {
-        let path = Path::new(path_str);
-        let resolved = if path.is_absolute() {
-            path.to_path_buf()
+    /// Resolve and validate path within workspace boundary.
+    /// If `require_parent` is true, the parent directory must already exist.
+    /// Prevents path escape via absolute paths or `..` traversal.
+    fn resolve_path(
+        path_str: &str,
+        workspace: &str,
+        require_parent: bool,
+    ) -> Result<PathBuf, ToolError> {
+        let workspace_root = std::fs::canonicalize(workspace).map_err(|e| {
+            ToolError::execution_failed(&format!("Invalid workspace '{}': {}", workspace, e))
+        })?;
+
+        let input = Path::new(path_str);
+        let candidate = if input.is_absolute() {
+            input.to_path_buf()
         } else {
-            Path::new(workspace).join(path)
+            workspace_root.join(input)
         };
 
-        // Canonicalize if the parent exists (for new files, parent must exist)
-        let parent = resolved.parent().unwrap_or(Path::new("."));
-        if !parent.exists() {
-            return Err(ToolError::not_found(&format!(
-                "Parent directory does not exist: {}",
-                parent.display()
+        // Canonicalize to resolve `..` segments.
+        // For existing paths, canonicalize directly; for new files, canonicalize parent + rejoin.
+        let resolved = if candidate.exists() {
+            std::fs::canonicalize(&candidate).map_err(|e| {
+                ToolError::execution_failed(&format!(
+                    "Failed to resolve path {}: {}",
+                    candidate.display(),
+                    e
+                ))
+            })?
+        } else {
+            let parent = candidate.parent().unwrap_or(Path::new("."));
+            if parent.exists() {
+                let parent_canon = std::fs::canonicalize(parent).map_err(|e| {
+                    ToolError::execution_failed(&format!(
+                        "Failed to resolve parent {}: {}",
+                        parent.display(),
+                        e
+                    ))
+                })?;
+                match candidate.file_name() {
+                    Some(name) => parent_canon.join(name),
+                    None => parent_canon,
+                }
+            } else if require_parent {
+                return Err(ToolError::not_found(&format!(
+                    "Parent directory does not exist: {}",
+                    parent.display()
+                )));
+            } else {
+                // For write ops where parent doesn't exist yet, we still validate
+                // the non-canonicalized path doesn't escape workspace
+                candidate.clone()
+            }
+        };
+
+        // Enforce workspace boundary
+        if !resolved.starts_with(&workspace_root) {
+            return Err(ToolError::invalid_input(&format!(
+                "Path escapes workspace: {}",
+                path_str
             )));
         }
 
@@ -196,7 +241,8 @@ impl Tool for FileSystemTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ToolError::invalid_input("Missing 'path' parameter"))?;
 
-        let resolved = Self::resolve_path(path_str, &ctx.workspace)?;
+        let require_parent = operation != "write";
+        let resolved = Self::resolve_path(path_str, &ctx.workspace, require_parent)?;
 
         match operation {
             "read" => {
@@ -209,7 +255,9 @@ impl Tool for FileSystemTool {
                     .params
                     .get("content")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::invalid_input("Missing 'content' for write operation"))?;
+                    .ok_or_else(|| {
+                        ToolError::invalid_input("Missing 'content' for write operation")
+                    })?;
                 Self::execute_write(&resolved, content)
             }
             "list" => {
@@ -222,8 +270,10 @@ impl Tool for FileSystemTool {
                     .params
                     .get("path_b")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::invalid_input("Missing 'path_b' for diff operation"))?;
-                let resolved_b = Self::resolve_path(path_b_str, &ctx.workspace)?;
+                    .ok_or_else(|| {
+                        ToolError::invalid_input("Missing 'path_b' for diff operation")
+                    })?;
+                let resolved_b = Self::resolve_path(path_b_str, &ctx.workspace, true)?;
                 Self::execute_diff(&resolved, &resolved_b)
             }
             _ => Err(ToolError::invalid_input(&format!(
@@ -320,9 +370,15 @@ mod tests {
         let tool = FileSystemTool::new();
         let mut params = std::collections::HashMap::new();
         params.insert("operation".to_string(), serde_json::json!("write"));
-        params.insert("path".to_string(), serde_json::json!(file_path.display().to_string()));
+        params.insert(
+            "path".to_string(),
+            serde_json::json!(file_path.display().to_string()),
+        );
         params.insert("content".to_string(), serde_json::json!("hello world"));
-        let input = ToolInput { tool_name: "filesystem".to_string(), params };
+        let input = ToolInput {
+            tool_name: "filesystem".to_string(),
+            params,
+        };
         let ctx = test_ctx(dir.to_str().unwrap());
 
         let result = tool.execute(&input, &ctx);
@@ -370,9 +426,18 @@ mod tests {
         let tool = FileSystemTool::new();
         let mut params = std::collections::HashMap::new();
         params.insert("operation".to_string(), serde_json::json!("diff"));
-        params.insert("path".to_string(), serde_json::json!(dir.join("a.txt").display().to_string()));
-        params.insert("path_b".to_string(), serde_json::json!(dir.join("b.txt").display().to_string()));
-        let input = ToolInput { tool_name: "filesystem".to_string(), params };
+        params.insert(
+            "path".to_string(),
+            serde_json::json!(dir.join("a.txt").display().to_string()),
+        );
+        params.insert(
+            "path_b".to_string(),
+            serde_json::json!(dir.join("b.txt").display().to_string()),
+        );
+        let input = ToolInput {
+            tool_name: "filesystem".to_string(),
+            params,
+        };
         let ctx = test_ctx(dir.to_str().unwrap());
 
         let result = tool.execute(&input, &ctx);
@@ -402,7 +467,10 @@ mod tests {
         let ctx = test_ctx(dir.to_str().unwrap());
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind, crate::tool_protocol::ToolErrorKind::InvalidInput);
+        assert_eq!(
+            result.unwrap_err().kind,
+            crate::tool_protocol::ToolErrorKind::InvalidInput
+        );
     }
 
     #[test]
@@ -423,7 +491,10 @@ mod tests {
         };
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind, crate::tool_protocol::ToolErrorKind::PolicyDenied);
+        assert_eq!(
+            result.unwrap_err().kind,
+            crate::tool_protocol::ToolErrorKind::PolicyDenied
+        );
         let _ = std::fs::remove_file(&file_path);
     }
 
@@ -455,9 +526,15 @@ mod tests {
         let tool = FileSystemTool::new();
         let mut params = std::collections::HashMap::new();
         params.insert("operation".to_string(), serde_json::json!("write"));
-        params.insert("path".to_string(), serde_json::json!(file_path.display().to_string()));
+        params.insert(
+            "path".to_string(),
+            serde_json::json!(file_path.display().to_string()),
+        );
         params.insert("content".to_string(), serde_json::json!("new content"));
-        let input = ToolInput { tool_name: "filesystem".to_string(), params };
+        let input = ToolInput {
+            tool_name: "filesystem".to_string(),
+            params,
+        };
         let ctx = test_ctx(dir.to_str().unwrap());
 
         let result = tool.execute(&input, &ctx);

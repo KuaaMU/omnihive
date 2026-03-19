@@ -1,5 +1,5 @@
-use crate::models::WorkflowInfo;
 use super::registry::get_library_dir;
+use crate::models::WorkflowInfo;
 
 #[derive(serde::Deserialize)]
 struct WorkflowYaml {
@@ -16,12 +16,13 @@ struct WorkflowYaml {
 #[derive(serde::Deserialize)]
 struct WorkflowStepYaml {
     role: String,
-    #[allow(dead_code)]
-    #[serde(default)]
-    persona: String,
+    #[serde(default, rename = "persona")]
+    _persona: String,
 }
 
-fn default_convergence() -> u32 { 1 }
+fn default_convergence() -> u32 {
+    1
+}
 
 pub(crate) fn load_workflows_from_files() -> Option<Vec<WorkflowInfo>> {
     let lib_dir = get_library_dir()?;
@@ -57,17 +58,113 @@ pub(crate) fn load_workflows_from_files() -> Option<Vec<WorkflowInfo>> {
         }
     }
 
-    if workflows.is_empty() { None } else { Some(workflows) }
+    if workflows.is_empty() {
+        None
+    } else {
+        Some(workflows)
+    }
 }
 
 pub(crate) fn fallback_workflows() -> Vec<WorkflowInfo> {
     let (enabled, file_path, tags) = super::default_lib_fields();
     vec![
-        WorkflowInfo { id: "pricing-monetization".into(), name: "Pricing & Monetization".into(), description: "End-to-end pricing strategy workflow.".into(), chain: vec!["research".into(), "cfo".into(), "product".into(), "marketing".into(), "critic".into(), "cfo".into()], convergence_cycles: 2, enabled, file_path: file_path.clone(), tags: tags.clone() },
-        WorkflowInfo { id: "product-launch".into(), name: "Product Launch".into(), description: "Coordinated product launch workflow.".into(), chain: vec!["marketing".into(), "research".into(), "sales".into(), "marketing".into(), "devops".into(), "ceo".into()], convergence_cycles: 2, enabled, file_path: file_path.clone(), tags: tags.clone() },
-        WorkflowInfo { id: "weekly-review".into(), name: "Weekly Review".into(), description: "Weekly strategic review cycle.".into(), chain: vec!["research".into(), "cfo".into(), "marketing".into(), "qa".into(), "ceo".into(), "critic".into()], convergence_cycles: 1, enabled, file_path: file_path.clone(), tags: tags.clone() },
-        WorkflowInfo { id: "new-product-eval".into(), name: "New Product Evaluation".into(), description: "Evaluate new product ideas.".into(), chain: vec!["research".into(), "product".into(), "cfo".into(), "critic".into(), "ceo".into()], convergence_cycles: 2, enabled, file_path: file_path.clone(), tags: tags.clone() },
-        WorkflowInfo { id: "feature-development".into(), name: "Feature Development".into(), description: "End-to-end feature development.".into(), chain: vec!["product".into(), "fullstack".into(), "qa".into(), "devops".into()], convergence_cycles: 1, enabled, file_path: file_path.clone(), tags: tags.clone() },
-        WorkflowInfo { id: "opportunity-discovery".into(), name: "Opportunity Discovery".into(), description: "Discover and validate market opportunities.".into(), chain: vec!["research".into(), "marketing".into(), "sales".into(), "cfo".into(), "ceo".into()], convergence_cycles: 2, enabled, file_path, tags },
+        WorkflowInfo {
+            id: "pricing-monetization".into(),
+            name: "Pricing & Monetization".into(),
+            description: "End-to-end pricing strategy workflow.".into(),
+            chain: vec![
+                "research".into(),
+                "cfo".into(),
+                "product".into(),
+                "marketing".into(),
+                "critic".into(),
+                "cfo".into(),
+            ],
+            convergence_cycles: 2,
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        },
+        WorkflowInfo {
+            id: "product-launch".into(),
+            name: "Product Launch".into(),
+            description: "Coordinated product launch workflow.".into(),
+            chain: vec![
+                "marketing".into(),
+                "research".into(),
+                "sales".into(),
+                "marketing".into(),
+                "devops".into(),
+                "ceo".into(),
+            ],
+            convergence_cycles: 2,
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        },
+        WorkflowInfo {
+            id: "weekly-review".into(),
+            name: "Weekly Review".into(),
+            description: "Weekly strategic review cycle.".into(),
+            chain: vec![
+                "research".into(),
+                "cfo".into(),
+                "marketing".into(),
+                "qa".into(),
+                "ceo".into(),
+                "critic".into(),
+            ],
+            convergence_cycles: 1,
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        },
+        WorkflowInfo {
+            id: "new-product-eval".into(),
+            name: "New Product Evaluation".into(),
+            description: "Evaluate new product ideas.".into(),
+            chain: vec![
+                "research".into(),
+                "product".into(),
+                "cfo".into(),
+                "critic".into(),
+                "ceo".into(),
+            ],
+            convergence_cycles: 2,
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        },
+        WorkflowInfo {
+            id: "feature-development".into(),
+            name: "Feature Development".into(),
+            description: "End-to-end feature development.".into(),
+            chain: vec![
+                "product".into(),
+                "fullstack".into(),
+                "qa".into(),
+                "devops".into(),
+            ],
+            convergence_cycles: 1,
+            enabled,
+            file_path: file_path.clone(),
+            tags: tags.clone(),
+        },
+        WorkflowInfo {
+            id: "opportunity-discovery".into(),
+            name: "Opportunity Discovery".into(),
+            description: "Discover and validate market opportunities.".into(),
+            chain: vec![
+                "research".into(),
+                "marketing".into(),
+                "sales".into(),
+                "cfo".into(),
+                "ceo".into(),
+            ],
+            convergence_cycles: 2,
+            enabled,
+            file_path,
+            tags,
+        },
     ]
 }

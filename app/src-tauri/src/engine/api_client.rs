@@ -151,7 +151,7 @@ pub fn call_api(config: &ApiCallConfig) -> Result<CycleResponse, String> {
             &config.user_message,
             config.timeout_secs,
         ),
-        "anthropic" | "claude-code" | _ => {
+        _ => {
             if config.force_stream {
                 call_anthropic_streaming(config)
             } else {
@@ -273,7 +273,10 @@ fn call_anthropic_streaming(config: &ApiCallConfig) -> Result<CycleResponse, Str
         Err(ureq::Error::Status(code, resp)) => {
             let error_body = resp.into_string().unwrap_or_default();
             let preview = truncate(&error_body, 2000);
-            Err(format!("Anthropic Streaming API error (HTTP {}): {}", code, preview))
+            Err(format!(
+                "Anthropic Streaming API error (HTTP {}): {}",
+                code, preview
+            ))
         }
         Err(e) => Err(format!("Anthropic streaming request failed: {}", e)),
     }
@@ -370,10 +373,7 @@ pub fn call_openai(
     user_message: &str,
     timeout_secs: u32,
 ) -> Result<CycleResponse, String> {
-    let url = format!(
-        "{}/v1/chat/completions",
-        api_base_url.trim_end_matches('/')
-    );
+    let url = format!("{}/v1/chat/completions", api_base_url.trim_end_matches('/'));
 
     let body = OpenAiRequest {
         model: model.to_string(),
@@ -480,12 +480,18 @@ mod tests {
 
     #[test]
     fn test_resolve_anthropic_model_sonnet() {
-        assert_eq!(resolve_anthropic_model("sonnet"), "claude-sonnet-4-20250514");
+        assert_eq!(
+            resolve_anthropic_model("sonnet"),
+            "claude-sonnet-4-20250514"
+        );
     }
 
     #[test]
     fn test_resolve_anthropic_model_haiku() {
-        assert_eq!(resolve_anthropic_model("haiku"), "claude-3-5-haiku-20241022");
+        assert_eq!(
+            resolve_anthropic_model("haiku"),
+            "claude-3-5-haiku-20241022"
+        );
     }
 
     #[test]
@@ -496,7 +502,10 @@ mod tests {
 
     #[test]
     fn test_resolve_anthropic_model_passthrough_custom() {
-        assert_eq!(resolve_anthropic_model("my-custom-model"), "my-custom-model");
+        assert_eq!(
+            resolve_anthropic_model("my-custom-model"),
+            "my-custom-model"
+        );
     }
 
     #[test]

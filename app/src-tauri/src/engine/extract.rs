@@ -1,6 +1,6 @@
-/// Pure extraction functions for parsing LLM responses.
-///
-/// All functions in this module are side-effect-free and easily testable.
+//! Pure extraction functions for parsing LLM responses.
+//!
+//! All functions in this module are side-effect-free and easily testable.
 
 /// Extract text between two markers, returning None if markers are missing or content is empty.
 pub fn extract_between_markers(text: &str, start_marker: &str, end_marker: &str) -> Option<String> {
@@ -109,19 +109,28 @@ mod tests {
     #[test]
     fn test_extract_between_markers_missing_start() {
         let text = "no markers here<<<END>>>";
-        assert_eq!(extract_between_markers(text, "<<<START>>>", "<<<END>>>"), None);
+        assert_eq!(
+            extract_between_markers(text, "<<<START>>>", "<<<END>>>"),
+            None
+        );
     }
 
     #[test]
     fn test_extract_between_markers_missing_end() {
         let text = "<<<START>>>content without end";
-        assert_eq!(extract_between_markers(text, "<<<START>>>", "<<<END>>>"), None);
+        assert_eq!(
+            extract_between_markers(text, "<<<START>>>", "<<<END>>>"),
+            None
+        );
     }
 
     #[test]
     fn test_extract_between_markers_empty_content() {
         let text = "<<<START>>>   <<<END>>>";
-        assert_eq!(extract_between_markers(text, "<<<START>>>", "<<<END>>>"), None);
+        assert_eq!(
+            extract_between_markers(text, "<<<START>>>", "<<<END>>>"),
+            None
+        );
     }
 
     #[test]
@@ -177,7 +186,10 @@ Some postamble"#;
     #[test]
     fn test_extract_reflection() {
         let response = "stuff<<<REFLECTION_START>>>I learned a lot<<<REFLECTION_END>>>more stuff";
-        assert_eq!(extract_reflection(response), Some("I learned a lot".to_string()));
+        assert_eq!(
+            extract_reflection(response),
+            Some("I learned a lot".to_string())
+        );
     }
 
     #[test]
@@ -188,7 +200,10 @@ Some postamble"#;
     #[test]
     fn test_extract_handoff() {
         let response = "<<<HANDOFF_START>>>Focus on marketing next<<<HANDOFF_END>>>";
-        assert_eq!(extract_handoff(response), Some("Focus on marketing next".to_string()));
+        assert_eq!(
+            extract_handoff(response),
+            Some("Focus on marketing next".to_string())
+        );
     }
 
     // --- extract_skill_requests ---

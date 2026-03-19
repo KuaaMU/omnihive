@@ -95,7 +95,10 @@ pub fn run_task(
     // Build policy engine
     let policy = match config.policy {
         PolicyMode::Permissive => Arc::new(PolicyEngine::permissive()),
-        PolicyMode::Default => Arc::new(PolicyEngine::from_guardrails(&[], project_dir.to_str().unwrap_or("."))),
+        PolicyMode::Default => Arc::new(PolicyEngine::from_guardrails(
+            &[],
+            project_dir.to_str().unwrap_or("."),
+        )),
     };
 
     // Check for existing checkpoint to resume from
@@ -114,7 +117,10 @@ pub fn run_task(
             if total_cost >= budget {
                 emit_trace(&trace_file, &task, "budget_exceeded", None)?;
                 task = task.with_status(TaskStatus::Failed);
-                task = task.with_error(&format!("Budget exhausted: ${:.4} >= ${:.4}", total_cost, budget));
+                task = task.with_error(&format!(
+                    "Budget exhausted: ${:.4} >= ${:.4}",
+                    total_cost, budget
+                ));
                 task_model::write_task_state(project_dir, &task)?;
                 break;
             }
@@ -157,7 +163,13 @@ pub fn run_task(
             tool_name: tool_names[0].to_string(),
             params: {
                 let mut m = std::collections::HashMap::new();
-                m.insert("command".to_string(), serde_json::json!(format!("echo 'Step {} for goal: {}'", step_index, config.goal)));
+                m.insert(
+                    "command".to_string(),
+                    serde_json::json!(format!(
+                        "echo 'Step {} for goal: {}'",
+                        step_index, config.goal
+                    )),
+                );
                 m
             },
         };
@@ -172,8 +184,13 @@ pub fn run_task(
                 }
 
                 emit_trace_step(
-                    &trace_file, &task, &completed_step, "step_completed",
-                    agent, None, None,
+                    &trace_file,
+                    &task,
+                    &completed_step,
+                    "step_completed",
+                    agent,
+                    None,
+                    None,
                 )?;
             }
             Err(tool_err) => {
@@ -181,13 +198,19 @@ pub fn run_task(
                 task = task.with_error(&tool_err.message);
 
                 emit_trace_step(
-                    &trace_file, &task, &failed_step, "step_failed",
-                    agent, None, None,
+                    &trace_file,
+                    &task,
+                    &failed_step,
+                    "step_failed",
+                    agent,
+                    None,
+                    None,
                 )?;
 
                 if task.consecutive_errors >= 3 {
-                    let new_status = state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
-                        .map_err(|e| format!("State transition error: {}", e))?;
+                    let new_status =
+                        state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
+                            .map_err(|e| format!("State transition error: {}", e))?;
                     task = task.with_status(new_status);
                     task_model::write_task_state(project_dir, &task)?;
                     emit_trace(&trace_file, &task, "task_failed", None)?;
@@ -232,8 +255,7 @@ fn emit_trace(
     event_type: &str,
     cost: Option<f64>,
 ) -> Result<(), String> {
-    let mut event = TraceEvent::new(&task.trace_id, event_type)
-        .with_task(&task.task_id);
+    let mut event = TraceEvent::new(&task.trace_id, event_type).with_task(&task.task_id);
     if let Some(c) = cost {
         event = event.with_cost(c);
     }
@@ -270,7 +292,9 @@ mod tests {
     struct EchoTool;
 
     impl Tool for EchoTool {
-        fn name(&self) -> &str { "echo" }
+        fn name(&self) -> &str {
+            "echo"
+        }
         fn schema(&self) -> ToolSchema {
             ToolSchema {
                 tool_id: "echo-v1".to_string(),
@@ -283,7 +307,11 @@ mod tests {
                 idempotent: true,
             }
         }
-        fn execute(&self, input: &ToolInput, _ctx: &ExecutionContext) -> Result<ToolOutput, ToolError> {
+        fn execute(
+            &self,
+            input: &ToolInput,
+            _ctx: &ExecutionContext,
+        ) -> Result<ToolOutput, ToolError> {
             Ok(ToolOutput::ok(serde_json::json!({"echoed": input.params})))
         }
     }
@@ -291,7 +319,9 @@ mod tests {
     struct FailTool;
 
     impl Tool for FailTool {
-        fn name(&self) -> &str { "fail" }
+        fn name(&self) -> &str {
+            "fail"
+        }
         fn schema(&self) -> ToolSchema {
             ToolSchema {
                 tool_id: "fail-v1".to_string(),
@@ -304,7 +334,11 @@ mod tests {
                 idempotent: false,
             }
         }
-        fn execute(&self, _input: &ToolInput, _ctx: &ExecutionContext) -> Result<ToolOutput, ToolError> {
+        fn execute(
+            &self,
+            _input: &ToolInput,
+            _ctx: &ExecutionContext,
+        ) -> Result<ToolOutput, ToolError> {
             Err(ToolError::execution_failed("intentional failure"))
         }
     }

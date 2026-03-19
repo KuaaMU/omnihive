@@ -62,7 +62,10 @@ impl ShellTool {
             output.to_string()
         } else {
             let truncated = &output[..self.config.max_output_bytes];
-            format!("{}\n... [truncated at {} bytes]", truncated, self.config.max_output_bytes)
+            format!(
+                "{}\n... [truncated at {} bytes]",
+                truncated, self.config.max_output_bytes
+            )
         }
     }
 }
@@ -121,7 +124,7 @@ impl Tool for ShellTool {
         self.validate_working_dir(working_dir)?;
 
         // Execute command
-        let output = execute_command(command_str, working_dir, ctx.timeout.as_secs())?;
+        let output = execute_command(command_str, working_dir, ctx.timeout)?;
 
         let stdout = self.truncate_output(&output.stdout);
         let stderr = self.truncate_output(&output.stderr);
@@ -157,31 +160,92 @@ struct CommandResult {
     exit_code: i32,
 }
 
-fn execute_command(command: &str, working_dir: &str, _timeout_secs: u64) -> Result<CommandResult, ToolError> {
+fn execute_command(
+    command: &str,
+    working_dir: &str,
+    timeout: std::time::Duration,
+) -> Result<CommandResult, ToolError> {
     let shell = if cfg!(target_os = "windows") {
         ("cmd", "/C")
     } else {
         ("sh", "-c")
     };
 
-    let result = Command::new(shell.0)
+    let mut child = Command::new(shell.0)
         .arg(shell.1)
         .arg(command)
         .current_dir(working_dir)
-        .output()
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .map_err(|e| {
             ToolError::execution_failed(&format!("Failed to spawn process: {}", e))
                 .with_cause(&e.to_string())
         })?;
 
-    let stdout = String::from_utf8_lossy(&result.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&result.stderr).to_string();
-    let exit_code = result.status.code().unwrap_or(-1);
+    // Drain stdout/stderr in separate threads to avoid pipe buffer deadlock.
+    // Without this, commands producing >64KB output would block and cause spurious timeouts.
+    let stdout_handle = child.stdout.take();
+    let stderr_handle = child.stderr.take();
+
+    let stdout_thread = std::thread::spawn(move || {
+        stdout_handle
+            .map(|mut s| {
+                let mut buf = Vec::new();
+                std::io::Read::read_to_end(&mut s, &mut buf).ok();
+                buf
+            })
+            .unwrap_or_default()
+    });
+
+    let stderr_thread = std::thread::spawn(move || {
+        stderr_handle
+            .map(|mut s| {
+                let mut buf = Vec::new();
+                std::io::Read::read_to_end(&mut s, &mut buf).ok();
+                buf
+            })
+            .unwrap_or_default()
+    });
+
+    let start = std::time::Instant::now();
+
+    // Poll for process exit with timeout
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    // Join threads to clean up even on timeout
+                    let _ = stdout_thread.join();
+                    let _ = stderr_thread.join();
+                    return Err(ToolError::execution_failed(&format!(
+                        "Command timed out after {:?}",
+                        timeout
+                    )));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(e) => {
+                let _ = stdout_thread.join();
+                let _ = stderr_thread.join();
+                return Err(ToolError::execution_failed(&format!(
+                    "Failed to wait for process: {}",
+                    e
+                )));
+            }
+        }
+    };
+
+    let stdout = stdout_thread.join().unwrap_or_default();
+    let stderr = stderr_thread.join().unwrap_or_default();
 
     Ok(CommandResult {
-        stdout,
-        stderr,
-        exit_code,
+        stdout: String::from_utf8_lossy(&stdout).to_string(),
+        stderr: String::from_utf8_lossy(&stderr).to_string(),
+        exit_code: status.code().unwrap_or(-1),
     })
 }
 
@@ -258,7 +322,10 @@ mod tests {
         let ctx = test_ctx(".");
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind, crate::tool_protocol::ToolErrorKind::InvalidInput);
+        assert_eq!(
+            result.unwrap_err().kind,
+            crate::tool_protocol::ToolErrorKind::InvalidInput
+        );
     }
 
     #[test]
@@ -292,7 +359,10 @@ mod tests {
         };
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind, crate::tool_protocol::ToolErrorKind::PolicyDenied);
+        assert_eq!(
+            result.unwrap_err().kind,
+            crate::tool_protocol::ToolErrorKind::PolicyDenied
+        );
     }
 
     #[test]
@@ -307,7 +377,9 @@ mod tests {
             allowed_dirs: vec!["/home/user/projects".to_string()],
             ..Default::default()
         });
-        assert!(tool.validate_working_dir("/home/user/projects/myapp").is_ok());
+        assert!(tool
+            .validate_working_dir("/home/user/projects/myapp")
+            .is_ok());
     }
 
     #[test]

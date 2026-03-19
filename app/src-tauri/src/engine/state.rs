@@ -1,4 +1,4 @@
-/// State file management: write/parse loop state, append log entries.
+//! State file management: write/parse loop state, append log entries.
 
 use std::path::Path;
 
@@ -47,9 +47,7 @@ pub fn parse_state_file(state_file: &Path) -> (u32, u32, u32, Option<String>) {
 
 /// Append a timestamped log entry to the project's auto-loop log file.
 pub fn append_log(dir: &Path, message: &str) {
-    let timestamp = chrono::Local::now()
-        .format("%Y-%m-%d %H:%M:%S")
-        .to_string();
+    let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let entry = format!("[{}] {}\n", timestamp, message);
     let log_path = dir.join("logs/auto-loop.log");
     if let Ok(mut file) = std::fs::OpenOptions::new()
@@ -99,7 +97,11 @@ mod tests {
         let dir = std::env::temp_dir().join("omnihive_test_state_malformed");
         let _ = fs::create_dir_all(&dir);
         let state_file = dir.join(".loop.state");
-        fs::write(&state_file, "current_cycle=abc\ntotal_cycles=\nrandom_line\n").unwrap();
+        fs::write(
+            &state_file,
+            "current_cycle=abc\ntotal_cycles=\nrandom_line\n",
+        )
+        .unwrap();
 
         let (cc, tc, ce, lca) = parse_state_file(&state_file);
         assert_eq!(cc, 0); // abc can't parse

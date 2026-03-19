@@ -1,6 +1,6 @@
+use crate::models::*;
 use std::path::PathBuf;
 use tauri::command;
-use crate::models::*;
 
 /// Mask an API key, showing only the first 8 and last 4 characters.
 fn mask_key(key: &str) -> String {
@@ -8,11 +8,7 @@ fn mask_key(key: &str) -> String {
     if trimmed.len() <= 12 {
         return "*".repeat(trimmed.len());
     }
-    format!(
-        "{}...{}",
-        &trimmed[..8],
-        &trimmed[trimmed.len() - 4..]
-    )
+    format!("{}...{}", &trimmed[..8], &trimmed[trimmed.len() - 4..])
 }
 
 /// Scan environment variables and config files for existing API provider configurations.
@@ -71,8 +67,8 @@ pub fn export_providers(provider_ids: Vec<String>) -> Result<String, String> {
 /// Import providers from a JSON string, adding them to current settings.
 #[command]
 pub fn import_providers(json: String) -> Result<AppSettings, String> {
-    let imported: Vec<AiProvider> = serde_json::from_str(&json)
-        .map_err(|e| format!("Failed to parse provider JSON: {}", e))?;
+    let imported: Vec<AiProvider> =
+        serde_json::from_str(&json).map_err(|e| format!("Failed to parse provider JSON: {}", e))?;
 
     let mut settings = crate::commands::settings::load_settings()?;
 
@@ -96,14 +92,62 @@ pub fn import_providers(json: String) -> Result<AppSettings, String> {
 
 fn detect_env_providers(providers: &mut Vec<DetectedProvider>) {
     let env_configs: &[(&str, &str, &str, &str, &str)] = &[
-        ("ANTHROPIC_API_KEY", "anthropic", "Anthropic (Claude)", "https://api.anthropic.com", "claude-sonnet-4-20250514"),
-        ("CLAUDE_API_KEY", "anthropic", "Anthropic (Claude)", "https://api.anthropic.com", "claude-sonnet-4-20250514"),
-        ("OPENAI_API_KEY", "openai", "OpenAI", "https://api.openai.com/v1", "gpt-4o"),
-        ("OPENROUTER_API_KEY", "openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "anthropic/claude-sonnet-4-20250514"),
-        ("GEMINI_API_KEY", "gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta", "gemini-2.5-pro"),
-        ("GOOGLE_API_KEY", "gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta", "gemini-2.5-pro"),
-        ("DEEPSEEK_API_KEY", "deepseek", "DeepSeek", "https://api.deepseek.com", "deepseek-chat"),
-        ("GROQ_API_KEY", "groq", "Groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
+        (
+            "ANTHROPIC_API_KEY",
+            "anthropic",
+            "Anthropic (Claude)",
+            "https://api.anthropic.com",
+            "claude-sonnet-4-20250514",
+        ),
+        (
+            "CLAUDE_API_KEY",
+            "anthropic",
+            "Anthropic (Claude)",
+            "https://api.anthropic.com",
+            "claude-sonnet-4-20250514",
+        ),
+        (
+            "OPENAI_API_KEY",
+            "openai",
+            "OpenAI",
+            "https://api.openai.com/v1",
+            "gpt-4o",
+        ),
+        (
+            "OPENROUTER_API_KEY",
+            "openrouter",
+            "OpenRouter",
+            "https://openrouter.ai/api/v1",
+            "anthropic/claude-sonnet-4-20250514",
+        ),
+        (
+            "GEMINI_API_KEY",
+            "gemini",
+            "Google Gemini",
+            "https://generativelanguage.googleapis.com/v1beta",
+            "gemini-2.5-pro",
+        ),
+        (
+            "GOOGLE_API_KEY",
+            "gemini",
+            "Google Gemini",
+            "https://generativelanguage.googleapis.com/v1beta",
+            "gemini-2.5-pro",
+        ),
+        (
+            "DEEPSEEK_API_KEY",
+            "deepseek",
+            "DeepSeek",
+            "https://api.deepseek.com",
+            "deepseek-chat",
+        ),
+        (
+            "GROQ_API_KEY",
+            "groq",
+            "Groq",
+            "https://api.groq.com/openai/v1",
+            "llama-3.3-70b-versatile",
+        ),
     ];
 
     for (env_var, provider_type, name, base_url, model) in env_configs {
@@ -140,7 +184,10 @@ fn detect_claude_config(providers: &mut Vec<DetectedProvider>) {
             Err(_) => continue,
         };
 
-        let source = format!("CC:{}", path.file_name().unwrap_or_default().to_string_lossy());
+        let source = format!(
+            "CC:{}",
+            path.file_name().unwrap_or_default().to_string_lossy()
+        );
 
         // Claude Code settings.json may have apiKey at top level
         for key_field in ["apiKey", "primaryApiKey", "api_key"] {
@@ -179,17 +226,20 @@ fn detect_claude_config(providers: &mut Vec<DetectedProvider>) {
         // Check for provider configurations inside settings
         if let Some(providers_val) = json.get("providers").and_then(|v| v.as_array()) {
             for p in providers_val {
-                let key = p.get("apiKey")
+                let key = p
+                    .get("apiKey")
                     .or_else(|| p.get("api_key"))
                     .or_else(|| p.get("key"))
                     .and_then(|v| v.as_str());
-                let ptype = p.get("type")
+                let ptype = p
+                    .get("type")
                     .or_else(|| p.get("provider_type"))
                     .or_else(|| p.get("provider"))
                     .and_then(|v| v.as_str());
                 if let (Some(key), Some(ptype)) = (key, ptype) {
                     if !key.is_empty() && key.len() > 10 {
-                        let base_url = p.get("baseUrl")
+                        let base_url = p
+                            .get("baseUrl")
                             .or_else(|| p.get("api_base_url"))
                             .or_else(|| p.get("baseURL"))
                             .and_then(|v| v.as_str())
@@ -231,7 +281,10 @@ fn detect_codex_config(providers: &mut Vec<DetectedProvider>) {
         for key_field in ["apiKey", "api_key", "key"] {
             if let Some(key) = json.get(key_field).and_then(|v| v.as_str()) {
                 if !key.is_empty() && key.len() > 10 {
-                    let model = json.get("model").and_then(|v| v.as_str()).unwrap_or("gpt-4o");
+                    let model = json
+                        .get("model")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("gpt-4o");
                     providers.push(DetectedProvider {
                         source: source.clone(),
                         provider_type: "openai".to_string(),
@@ -328,7 +381,8 @@ fn detect_cursor_config(providers: &mut Vec<DetectedProvider>) {
         for key_field in ["openai.apiKey", "anthropic.apiKey"] {
             let parts: Vec<&str> = key_field.split('.').collect();
             if parts.len() == 2 {
-                if let Some(key) = json.get(parts[0])
+                if let Some(key) = json
+                    .get(parts[0])
                     .and_then(|v| v.get(parts[1]))
                     .and_then(|v| v.as_str())
                 {

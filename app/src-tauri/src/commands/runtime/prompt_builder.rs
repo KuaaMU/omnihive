@@ -1,5 +1,5 @@
-use std::path::Path;
 use crate::engine::extract::truncate_string;
+use std::path::Path;
 
 // ===== System Prompt Construction =====
 
@@ -112,37 +112,47 @@ pub(crate) fn build_user_prompt(consensus_content: &str, handoff_note: &str) -> 
 fn role_to_skills(role: &str) -> Vec<&'static str> {
     match role {
         "ceo" => vec![
-            "deep-research", "product-strategist", "market-sizing",
-            "startup-financial-modeling", "premortem",
+            "deep-research",
+            "product-strategist",
+            "market-sizing",
+            "startup-financial-modeling",
+            "premortem",
         ],
         "fullstack" => vec![
-            "code-review-security", "tdd-workflow", "frontend-patterns",
-            "backend-patterns", "api-design",
+            "code-review-security",
+            "tdd-workflow",
+            "frontend-patterns",
+            "backend-patterns",
+            "api-design",
         ],
         "devops" => vec![
-            "devops", "docker-patterns", "security-audit", "deployment-patterns",
+            "devops",
+            "docker-patterns",
+            "security-audit",
+            "deployment-patterns",
         ],
-        "critic" => vec![
-            "premortem", "financial-unit-economics", "security-review",
-        ],
-        "product" => vec![
-            "product-strategist", "deep-research", "market-sizing",
-        ],
+        "critic" => vec!["premortem", "financial-unit-economics", "security-review"],
+        "product" => vec!["product-strategist", "deep-research", "market-sizing"],
         "ui" => vec!["frontend-patterns", "product-strategist"],
         "qa" => vec![
-            "senior-qa", "tdd-workflow", "e2e-testing", "verification-loop",
+            "senior-qa",
+            "tdd-workflow",
+            "e2e-testing",
+            "verification-loop",
         ],
         "marketing" => vec![
-            "seo-content-strategist", "competitive-intelligence", "content-strategy",
+            "seo-content-strategist",
+            "competitive-intelligence",
+            "content-strategy",
         ],
         "operations" => vec!["micro-saas-launcher", "startup-financial-modeling"],
         "sales" => vec!["competitive-intelligence", "pricing-strategy"],
         "cfo" => vec![
-            "financial-unit-economics", "pricing-strategy", "startup-financial-modeling",
+            "financial-unit-economics",
+            "pricing-strategy",
+            "startup-financial-modeling",
         ],
-        "research" => vec![
-            "deep-research", "competitive-intelligence", "market-sizing",
-        ],
+        "research" => vec!["deep-research", "competitive-intelligence", "market-sizing"],
         _ => vec![],
     }
 }
@@ -168,10 +178,7 @@ fn load_role_skills(role: &str) -> String {
         return String::new();
     }
 
-    format!(
-        "\n\n## Available Skills\n\n{}",
-        skill_sections.join("\n\n")
-    )
+    format!("\n\n## Available Skills\n\n{}", skill_sections.join("\n\n"))
 }
 
 fn load_skill_summary(skill_id: &str, lib_dir: Option<&Path>) -> Option<String> {
@@ -263,10 +270,7 @@ fn extract_skill_md_summary(content: &str) -> String {
     }
 }
 
-pub(crate) fn load_skill_full_content(
-    skill_id: &str,
-    lib_dir: Option<&Path>,
-) -> Option<String> {
+pub(crate) fn load_skill_full_content(skill_id: &str, lib_dir: Option<&Path>) -> Option<String> {
     let lib = lib_dir?;
 
     let real_path = lib.join("real-skills").join(skill_id).join("SKILL.md");

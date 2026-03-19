@@ -32,9 +32,24 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#D97706".to_string(),
             description: "Claude models - best for reasoning and coding".to_string(),
             models: vec![
-                ModelOption { id: "claude-opus-4-20250514".to_string(), name: "Claude Opus 4".to_string(), tier: "opus".to_string(), context_window: 200000 },
-                ModelOption { id: "claude-sonnet-4-20250514".to_string(), name: "Claude Sonnet 4".to_string(), tier: "sonnet".to_string(), context_window: 200000 },
-                ModelOption { id: "claude-3-5-haiku-20241022".to_string(), name: "Claude 3.5 Haiku".to_string(), tier: "haiku".to_string(), context_window: 200000 },
+                ModelOption {
+                    id: "claude-opus-4-20250514".to_string(),
+                    name: "Claude Opus 4".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 200000,
+                },
+                ModelOption {
+                    id: "claude-sonnet-4-20250514".to_string(),
+                    name: "Claude Sonnet 4".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 200000,
+                },
+                ModelOption {
+                    id: "claude-3-5-haiku-20241022".to_string(),
+                    name: "Claude 3.5 Haiku".to_string(),
+                    tier: "haiku".to_string(),
+                    context_window: 200000,
+                },
             ],
         },
         ProviderPreset {
@@ -46,10 +61,30 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#10B981".to_string(),
             description: "GPT models - versatile general purpose".to_string(),
             models: vec![
-                ModelOption { id: "gpt-4o".to_string(), name: "GPT-4o".to_string(), tier: "sonnet".to_string(), context_window: 128000 },
-                ModelOption { id: "gpt-4o-mini".to_string(), name: "GPT-4o Mini".to_string(), tier: "haiku".to_string(), context_window: 128000 },
-                ModelOption { id: "o3".to_string(), name: "o3".to_string(), tier: "opus".to_string(), context_window: 200000 },
-                ModelOption { id: "o4-mini".to_string(), name: "o4-mini".to_string(), tier: "sonnet".to_string(), context_window: 200000 },
+                ModelOption {
+                    id: "gpt-4o".to_string(),
+                    name: "GPT-4o".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "gpt-4o-mini".to_string(),
+                    name: "GPT-4o Mini".to_string(),
+                    tier: "haiku".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "o3".to_string(),
+                    name: "o3".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 200000,
+                },
+                ModelOption {
+                    id: "o4-mini".to_string(),
+                    name: "o4-mini".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 200000,
+                },
             ],
         },
         ProviderPreset {
@@ -61,10 +96,30 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#6366F1".to_string(),
             description: "Access 200+ models through one API".to_string(),
             models: vec![
-                ModelOption { id: "anthropic/claude-sonnet-4-20250514".to_string(), name: "Claude Sonnet 4".to_string(), tier: "sonnet".to_string(), context_window: 200000 },
-                ModelOption { id: "openai/gpt-4o".to_string(), name: "GPT-4o".to_string(), tier: "sonnet".to_string(), context_window: 128000 },
-                ModelOption { id: "google/gemini-2.5-pro".to_string(), name: "Gemini 2.5 Pro".to_string(), tier: "opus".to_string(), context_window: 1000000 },
-                ModelOption { id: "deepseek/deepseek-r1".to_string(), name: "DeepSeek R1".to_string(), tier: "opus".to_string(), context_window: 128000 },
+                ModelOption {
+                    id: "anthropic/claude-sonnet-4-20250514".to_string(),
+                    name: "Claude Sonnet 4".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 200000,
+                },
+                ModelOption {
+                    id: "openai/gpt-4o".to_string(),
+                    name: "GPT-4o".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "google/gemini-2.5-pro".to_string(),
+                    name: "Gemini 2.5 Pro".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 1000000,
+                },
+                ModelOption {
+                    id: "deepseek/deepseek-r1".to_string(),
+                    name: "DeepSeek R1".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 128000,
+                },
             ],
         },
         ProviderPreset {
@@ -76,8 +131,18 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#3B82F6".to_string(),
             description: "Cost-effective reasoning and coding models".to_string(),
             models: vec![
-                ModelOption { id: "deepseek-chat".to_string(), name: "DeepSeek V3".to_string(), tier: "sonnet".to_string(), context_window: 128000 },
-                ModelOption { id: "deepseek-reasoner".to_string(), name: "DeepSeek R1".to_string(), tier: "opus".to_string(), context_window: 128000 },
+                ModelOption {
+                    id: "deepseek-chat".to_string(),
+                    name: "DeepSeek V3".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "deepseek-reasoner".to_string(),
+                    name: "DeepSeek R1".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 128000,
+                },
             ],
         },
         ProviderPreset {
@@ -89,8 +154,18 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#F59E0B".to_string(),
             description: "Gemini models with massive context windows".to_string(),
             models: vec![
-                ModelOption { id: "gemini-2.5-pro".to_string(), name: "Gemini 2.5 Pro".to_string(), tier: "opus".to_string(), context_window: 1000000 },
-                ModelOption { id: "gemini-2.5-flash".to_string(), name: "Gemini 2.5 Flash".to_string(), tier: "sonnet".to_string(), context_window: 1000000 },
+                ModelOption {
+                    id: "gemini-2.5-pro".to_string(),
+                    name: "Gemini 2.5 Pro".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 1000000,
+                },
+                ModelOption {
+                    id: "gemini-2.5-flash".to_string(),
+                    name: "Gemini 2.5 Flash".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 1000000,
+                },
             ],
         },
         ProviderPreset {
@@ -102,8 +177,18 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#EF4444".to_string(),
             description: "Ultra-fast inference for open-source models".to_string(),
             models: vec![
-                ModelOption { id: "llama-3.3-70b-versatile".to_string(), name: "Llama 3.3 70B".to_string(), tier: "sonnet".to_string(), context_window: 128000 },
-                ModelOption { id: "llama-3.1-8b-instant".to_string(), name: "Llama 3.1 8B".to_string(), tier: "haiku".to_string(), context_window: 128000 },
+                ModelOption {
+                    id: "llama-3.3-70b-versatile".to_string(),
+                    name: "Llama 3.3 70B".to_string(),
+                    tier: "sonnet".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "llama-3.1-8b-instant".to_string(),
+                    name: "Llama 3.1 8B".to_string(),
+                    tier: "haiku".to_string(),
+                    context_window: 128000,
+                },
             ],
         },
         ProviderPreset {
@@ -115,8 +200,18 @@ fn built_in_presets() -> Vec<ProviderPreset> {
             icon_color: "#8B5CF6".to_string(),
             description: "European AI - efficient multilingual models".to_string(),
             models: vec![
-                ModelOption { id: "mistral-large-latest".to_string(), name: "Mistral Large".to_string(), tier: "opus".to_string(), context_window: 128000 },
-                ModelOption { id: "mistral-small-latest".to_string(), name: "Mistral Small".to_string(), tier: "haiku".to_string(), context_window: 128000 },
+                ModelOption {
+                    id: "mistral-large-latest".to_string(),
+                    name: "Mistral Large".to_string(),
+                    tier: "opus".to_string(),
+                    context_window: 128000,
+                },
+                ModelOption {
+                    id: "mistral-small-latest".to_string(),
+                    name: "Mistral Small".to_string(),
+                    tier: "haiku".to_string(),
+                    context_window: 128000,
+                },
             ],
         },
         ProviderPreset {

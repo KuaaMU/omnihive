@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use crate::models::*;
+use std::path::PathBuf;
 
 // ===== Project Registry =====
 
@@ -27,10 +27,9 @@ fn save_registry(registry: &ProjectRegistry) -> Result<(), String> {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("Failed to create registry dir: {}", e))?;
     }
-    let json = serde_json::to_string_pretty(registry)
-        .map_err(|e| format!("Serialize error: {}", e))?;
-    std::fs::write(&path, &json)
-        .map_err(|e| format!("Write error: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(registry).map_err(|e| format!("Serialize error: {}", e))?;
+    std::fs::write(&path, &json).map_err(|e| format!("Write error: {}", e))?;
     Ok(())
 }
 
@@ -87,13 +86,11 @@ pub(crate) fn load_library_state() -> LibraryState {
 pub(crate) fn save_library_state(state: &LibraryState) -> Result<(), String> {
     let path = get_library_state_path();
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create dir: {}", e))?;
+        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {}", e))?;
     }
-    let json = serde_json::to_string_pretty(state)
-        .map_err(|e| format!("Serialize error: {}", e))?;
-    std::fs::write(&path, &json)
-        .map_err(|e| format!("Write error: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(state).map_err(|e| format!("Serialize error: {}", e))?;
+    std::fs::write(&path, &json).map_err(|e| format!("Write error: {}", e))?;
     Ok(())
 }
 
@@ -105,6 +102,14 @@ pub fn get_library_dir_pub() -> Option<PathBuf> {
 }
 
 pub(crate) fn get_library_dir() -> Option<PathBuf> {
+    // Environment variable override takes highest precedence
+    if let Ok(env_lib) = std::env::var("OMNIHIVE_LIBRARY_DIR") {
+        let env_path = PathBuf::from(&env_lib);
+        if env_path.exists() {
+            return Some(env_path);
+        }
+    }
+
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let lib = parent.join("library");
@@ -127,11 +132,6 @@ pub(crate) fn get_library_dir() -> Option<PathBuf> {
     let cwd_lib = PathBuf::from("library");
     if cwd_lib.exists() {
         return Some(cwd_lib);
-    }
-
-    let known = PathBuf::from("F:/omnihive/library");
-    if known.exists() {
-        return Some(known);
     }
 
     None
@@ -198,8 +198,7 @@ pub(crate) fn delete_project_impl(id: &str) -> Result<bool, String> {
     if let Some(entry) = entry {
         let path = PathBuf::from(&entry.output_dir);
         if path.exists() {
-            std::fs::remove_dir_all(&path)
-                .map_err(|e| format!("Failed to delete: {}", e))?;
+            std::fs::remove_dir_all(&path).map_err(|e| format!("Failed to delete: {}", e))?;
         }
         registry.projects.retain(|p| p.id != id);
         save_registry(&registry)?;

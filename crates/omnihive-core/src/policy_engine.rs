@@ -11,14 +11,8 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "decision", rename_all = "snake_case")]
 pub enum PolicyDecision {
     Allow,
-    Deny {
-        reason: String,
-        rule_id: String,
-    },
-    RequiresApproval {
-        approver: String,
-        reason: String,
-    },
+    Deny { reason: String, rule_id: String },
+    RequiresApproval { approver: String, reason: String },
 }
 
 impl PolicyDecision {
@@ -179,8 +173,7 @@ fn action_matches(pattern: &str, action: &str) -> bool {
     if pattern == "*" {
         return true;
     }
-    if pattern.ends_with(".*") {
-        let prefix = &pattern[..pattern.len() - 2];
+    if let Some(prefix) = pattern.strip_suffix(".*") {
         return action.starts_with(prefix);
     }
     pattern == action
@@ -224,8 +217,7 @@ fn conditions_match(conditions: &RuleConditions, request: &ToolRequest) -> bool 
 }
 
 fn path_matches(pattern: &str, path: &str) -> bool {
-    if pattern.ends_with('*') {
-        let prefix = &pattern[..pattern.len() - 1];
+    if let Some(prefix) = pattern.strip_suffix('*') {
         return path.starts_with(prefix);
     }
     pattern == path
@@ -366,7 +358,9 @@ mod tests {
             priority: 0,
         }]);
 
-        assert!(!engine.evaluate(&req_cmd("shell.execute", "git push --force main")).is_allowed());
+        assert!(!engine
+            .evaluate(&req_cmd("shell.execute", "git push --force main"))
+            .is_allowed());
         // No command in request = condition doesn't match = falls through to default deny
         assert!(!engine.evaluate(&req("shell.execute")).is_allowed());
     }
@@ -385,8 +379,12 @@ mod tests {
             priority: 0,
         }]);
 
-        assert!(engine.evaluate(&req_path("fs.write", "projects/myapp/src/main.rs")).is_allowed());
-        assert!(!engine.evaluate(&req_path("fs.write", "/etc/passwd")).is_allowed());
+        assert!(engine
+            .evaluate(&req_path("fs.write", "projects/myapp/src/main.rs"))
+            .is_allowed());
+        assert!(!engine
+            .evaluate(&req_path("fs.write", "/etc/passwd"))
+            .is_allowed());
     }
 
     // --- Agent conditions ---
@@ -403,8 +401,12 @@ mod tests {
             priority: 0,
         }]);
 
-        assert!(engine.evaluate(&req_agent("shell.execute", "devops")).is_allowed());
-        assert!(!engine.evaluate(&req_agent("shell.execute", "ceo")).is_allowed());
+        assert!(engine
+            .evaluate(&req_agent("shell.execute", "devops"))
+            .is_allowed());
+        assert!(!engine
+            .evaluate(&req_agent("shell.execute", "ceo"))
+            .is_allowed());
     }
 
     // --- from_guardrails ---
@@ -432,8 +434,12 @@ mod tests {
     #[test]
     fn test_from_guardrails_allows_fs_in_workspace() {
         let engine = PolicyEngine::from_guardrails(&[], "projects/");
-        assert!(engine.evaluate(&req_path("fs.read", "projects/myapp/file.txt")).is_allowed());
-        assert!(engine.evaluate(&req_path("fs.write", "projects/myapp/file.txt")).is_allowed());
+        assert!(engine
+            .evaluate(&req_path("fs.read", "projects/myapp/file.txt"))
+            .is_allowed());
+        assert!(engine
+            .evaluate(&req_path("fs.write", "projects/myapp/file.txt"))
+            .is_allowed());
     }
 
     // --- PolicyDecision serde ---

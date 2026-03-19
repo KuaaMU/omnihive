@@ -20,7 +20,8 @@ impl GitHubTool {
             .output()
             .map_err(|e| {
                 ToolError::execution_failed(&format!(
-                    "Failed to run gh CLI (is it installed?): {}",
+                    "Failed to run `gh {}` (is it installed?): {}",
+                    args.join(" "),
                     e
                 ))
             })?;
@@ -38,7 +39,11 @@ impl GitHubTool {
             .current_dir(working_dir)
             .output()
             .map_err(|e| {
-                ToolError::execution_failed(&format!("Failed to run git: {}", e))
+                ToolError::execution_failed(&format!(
+                    "Failed to run `git {}`: {}",
+                    args.join(" "),
+                    e
+                ))
             })?;
 
         let stdout = String::from_utf8_lossy(&result.stdout).to_string();
@@ -51,8 +56,10 @@ impl GitHubTool {
     fn execute_list_issues(ctx: &ExecutionContext) -> Result<ToolOutput, ToolError> {
         ctx.check_policy("github.read", None, None)?;
 
-        let (stdout, stderr, exit_code) =
-            Self::run_gh(&["issue", "list", "--json", "number,title,state,labels"], &ctx.workspace)?;
+        let (stdout, stderr, exit_code) = Self::run_gh(
+            &["issue", "list", "--json", "number,title,state,labels"],
+            &ctx.workspace,
+        )?;
 
         if exit_code != 0 {
             return Err(ToolError::execution_failed(&format!(
@@ -74,7 +81,11 @@ impl GitHubTool {
         branch_name: &str,
         ctx: &ExecutionContext,
     ) -> Result<ToolOutput, ToolError> {
-        ctx.check_policy("github.write", None, Some(&format!("git checkout -b {}", branch_name)))?;
+        ctx.check_policy(
+            "github.write",
+            None,
+            Some(&format!("git checkout -b {}", branch_name)),
+        )?;
 
         let (_, stderr, exit_code) =
             Self::run_git(&["checkout", "-b", branch_name], &ctx.workspace)?;
@@ -362,7 +373,10 @@ mod tests {
         let mut params = std::collections::HashMap::new();
         params.insert("operation".to_string(), serde_json::json!("create_branch"));
         params.insert("branch".to_string(), serde_json::json!("feat/test"));
-        let input = ToolInput { tool_name: "github".to_string(), params };
+        let input = ToolInput {
+            tool_name: "github".to_string(),
+            params,
+        };
         let result = tool.execute(&input, &deny_ctx());
         assert!(result.is_err());
         assert_eq!(

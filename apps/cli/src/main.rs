@@ -4,7 +4,11 @@ use std::path::PathBuf;
 mod commands;
 
 #[derive(Parser)]
-#[command(name = "omnihive", version, about = "Omnihive Execution Control Plane CLI")]
+#[command(
+    name = "omnihive",
+    version,
+    about = "Omnihive Execution Control Plane CLI"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -75,12 +79,19 @@ fn main() {
 
     let result = match cli.command {
         Commands::Status => commands::status(),
-        Commands::Replay { trace_file, task_id } => commands::replay(&trace_file, task_id.as_deref()),
+        Commands::Replay {
+            trace_file,
+            task_id,
+        } => commands::replay(&trace_file, task_id.as_deref()),
         Commands::Watch { task_id, dir } => commands::watch(&task_id, &dir),
         Commands::Validate { schema, data } => commands::validate(&schema, &data),
-        Commands::Submit { goal, budget, policy, max_steps, dir } => {
-            commands::submit(&goal, budget, &policy, max_steps, &dir)
-        }
+        Commands::Submit {
+            goal,
+            budget,
+            policy,
+            max_steps,
+            dir,
+        } => commands::submit(&goal, budget, &policy, max_steps, &dir),
         Commands::Eval { trace_path, output } => commands::eval_cmd(&trace_path, output.as_deref()),
     };
 

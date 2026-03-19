@@ -1,8 +1,8 @@
-use std::path::Path;
-use crate::engine::{api_client, extract, state};
-use crate::models::CycleResult;
 use super::credentials::ApiCredentials;
 use super::prompt_builder::{build_system_prompt, build_user_prompt};
+use crate::engine::{api_client, extract, state};
+use crate::models::CycleResult;
+use std::path::Path;
 
 // ===== Skill Request Queue =====
 
@@ -57,8 +57,13 @@ pub(crate) fn run_api_cycle(
     let injected_skills = drain_pending_skills(project_dir);
 
     // 5. Build prompts
-    let system_prompt =
-        build_system_prompt(&agent_content, agent_role, cycle, &agent_memory, &injected_skills);
+    let system_prompt = build_system_prompt(
+        &agent_content,
+        agent_role,
+        cycle,
+        &agent_memory,
+        &injected_skills,
+    );
     let user_prompt = build_user_prompt(&consensus_content, &handoff_note);
 
     // 6. Call API
@@ -103,7 +108,10 @@ pub(crate) fn run_api_cycle(
 
         state::append_log(dir, &format!("Consensus updated by {} agent", agent_role));
     } else {
-        state::append_log(dir, "No structured consensus update in response (logged only)");
+        state::append_log(
+            dir,
+            "No structured consensus update in response (logged only)",
+        );
     }
 
     // 8. Extract and save agent reflection/memory and handoff note
@@ -198,7 +206,10 @@ fn append_agent_memory(dir: &Path, role: &str, cycle: u32, reflection: &str) {
     let memory_path = memory_dir.join("MEMORY.md");
     let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M").to_string();
 
-    let entry = format!("\n---\n**Cycle {} | {}**\n\n{}\n", cycle, timestamp, reflection);
+    let entry = format!(
+        "\n---\n**Cycle {} | {}**\n\n{}\n",
+        cycle, timestamp, reflection
+    );
 
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)

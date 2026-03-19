@@ -79,16 +79,15 @@ pub fn append_trace_event(path: &Path, event: &TraceEvent) -> Result<(), String>
         .open(path)
         .map_err(|e| format!("Failed to open trace file: {}", e))?;
 
-    writeln!(file, "{}", line)
-        .map_err(|e| format!("Failed to write trace event: {}", e))
+    writeln!(file, "{}", line).map_err(|e| format!("Failed to write trace event: {}", e))
 }
 
 // ===== JSONL Reader =====
 
 /// Read all trace events from a JSONL file.
 pub fn read_trace_events(path: &Path) -> Result<Vec<TraceEvent>, String> {
-    let file = std::fs::File::open(path)
-        .map_err(|e| format!("Failed to open trace file: {}", e))?;
+    let file =
+        std::fs::File::open(path).map_err(|e| format!("Failed to open trace file: {}", e))?;
     let reader = std::io::BufReader::new(file);
     let mut events = Vec::new();
 

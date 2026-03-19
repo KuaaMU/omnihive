@@ -1,6 +1,6 @@
+use crate::models::*;
 use std::fs;
 use std::path::Path;
-use crate::models::*;
 
 pub fn generate_all(
     config: &FactoryConfig,
@@ -30,8 +30,8 @@ pub fn generate_all(
     }
 
     // 1. Generate company.yaml
-    let yaml_content = serde_yaml::to_string(config)
-        .map_err(|e| format!("YAML serialize error: {}", e))?;
+    let yaml_content =
+        serde_yaml::to_string(config).map_err(|e| format!("YAML serialize error: {}", e))?;
     let config_path = output_dir.join("company.yaml");
     fs::write(&config_path, &yaml_content).map_err(|e| format!("Write error: {}", e))?;
     files_created.push(config_path.display().to_string());
@@ -45,7 +45,10 @@ pub fn generate_all(
     // 3. Generate agent files
     for agent in &config.org.agents {
         let agent_md = generate_agent_md(agent, config);
-        let path = output_dir.join(format!(".claude/agents/{}-{}.md", agent.role, agent.persona.id));
+        let path = output_dir.join(format!(
+            ".claude/agents/{}-{}.md",
+            agent.role, agent.persona.id
+        ));
         fs::write(&path, &agent_md).map_err(|e| format!("Write error: {}", e))?;
         files_created.push(path.display().to_string());
     }
@@ -62,7 +65,8 @@ pub fn generate_all(
     fs::write(
         &settings_path,
         serde_json::to_string_pretty(&settings).unwrap(),
-    ).map_err(|e| format!("Write error: {}", e))?;
+    )
+    .map_err(|e| format!("Write error: {}", e))?;
     files_created.push(settings_path.display().to_string());
 
     // 6. Generate workflow docs
@@ -94,9 +98,8 @@ pub fn generate_all(
     fs::write(&log_path, "").map_err(|e| format!("Write error: {}", e))?;
     files_created.push(log_path.display().to_string());
 
-    let unique_skills: std::collections::HashSet<_> = config.org.agents.iter()
-        .flat_map(|a| &a.skills)
-        .collect();
+    let unique_skills: std::collections::HashSet<_> =
+        config.org.agents.iter().flat_map(|a| &a.skills).collect();
 
     Ok(GenerateResult {
         output_dir: output_dir.display().to_string(),
@@ -112,7 +115,10 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
 
     md.push_str(&format!("# {}\n\n", config.company.name));
     md.push_str(&format!("## Mission\n\n{}\n\n", config.company.mission));
-    md.push_str(&format!("## Description\n\n{}\n\n", config.company.description));
+    md.push_str(&format!(
+        "## Description\n\n{}\n\n",
+        config.company.description
+    ));
 
     // Team overview
     md.push_str("## Team\n\n");
@@ -124,7 +130,7 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
             agent.role, agent.persona.id, agent.layer, agent.model
         ));
     }
-    md.push_str("\n");
+    md.push('\n');
 
     // Workflows
     if !config.workflows.is_empty() {
@@ -132,7 +138,9 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
         for wf in &config.workflows {
             md.push_str(&format!(
                 "### {}\n{}\n\nChain: {}\n\n",
-                wf.name, wf.description, wf.chain.join(" -> ")
+                wf.name,
+                wf.description,
+                wf.chain.join(" -> ")
             ));
         }
     }
@@ -151,16 +159,29 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
     for cmd in &config.guardrails.forbidden {
         md.push_str(&format!("- `{}`\n", cmd));
     }
-    md.push_str(&format!("\n### Workspace: `{}`\n", config.guardrails.workspace));
+    md.push_str(&format!(
+        "\n### Workspace: `{}`\n",
+        config.guardrails.workspace
+    ));
     md.push_str(&format!(
         "### Critic Review Required: {}\n\n",
-        if config.guardrails.require_critic_review { "Yes" } else { "No" }
+        if config.guardrails.require_critic_review {
+            "Yes"
+        } else {
+            "No"
+        }
     ));
 
     // Budget
     md.push_str("## Budget\n\n");
-    md.push_str(&format!("- Max Daily: ${:.2}\n", config.runtime.budget.max_daily_usd));
-    md.push_str(&format!("- Alert At: ${:.2}\n", config.runtime.budget.alert_at_usd));
+    md.push_str(&format!(
+        "- Max Daily: ${:.2}\n",
+        config.runtime.budget.max_daily_usd
+    ));
+    md.push_str(&format!(
+        "- Alert At: ${:.2}\n",
+        config.runtime.budget.alert_at_usd
+    ));
 
     md
 }
@@ -168,7 +189,10 @@ fn generate_claude_md(config: &FactoryConfig) -> String {
 fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
     let mut md = String::new();
 
-    md.push_str(&format!("# Agent: {} ({})\n\n", agent.role, agent.persona.id));
+    md.push_str(&format!(
+        "# Agent: {} ({})\n\n",
+        agent.role, agent.persona.id
+    ));
     md.push_str(&format!("**Company**: {}\n", config.company.name));
     md.push_str(&format!("**Mission**: {}\n\n", config.company.mission));
 
@@ -178,11 +202,19 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
 
     // Persona instructions
     md.push_str("## Persona\n\n");
-    md.push_str(&format!("You are channeling the expertise of **{}**.\n", agent.persona.id));
-    md.push_str("Apply their mental models, decision-making frameworks, and expertise to every task.\n\n");
+    md.push_str(&format!(
+        "You are channeling the expertise of **{}**.\n",
+        agent.persona.id
+    ));
+    md.push_str(
+        "Apply their mental models, decision-making frameworks, and expertise to every task.\n\n",
+    );
 
     if !agent.persona.custom_instructions.is_empty() {
-        md.push_str(&format!("### Custom Instructions\n\n{}\n\n", agent.persona.custom_instructions));
+        md.push_str(&format!(
+            "### Custom Instructions\n\n{}\n\n",
+            agent.persona.custom_instructions
+        ));
     }
 
     // Skills
@@ -191,7 +223,7 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
         for skill in &agent.skills {
             md.push_str(&format!("- {}\n", skill));
         }
-        md.push_str("\n");
+        md.push('\n');
     }
 
     // Operational protocol
@@ -208,7 +240,7 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
         for d in &agent.decides {
             md.push_str(&format!("- {}\n", d));
         }
-        md.push_str("\n");
+        md.push('\n');
     }
 
     // Guardrails
@@ -217,7 +249,10 @@ fn generate_agent_md(agent: &AgentConfig, config: &FactoryConfig) -> String {
     for cmd in &config.guardrails.forbidden {
         md.push_str(&format!("- `{}`\n", cmd));
     }
-    md.push_str(&format!("\nStay within workspace: `{}`\n", config.guardrails.workspace));
+    md.push_str(&format!(
+        "\nStay within workspace: `{}`\n",
+        config.guardrails.workspace
+    ));
 
     md
 }

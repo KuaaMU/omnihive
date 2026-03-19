@@ -9,18 +9,18 @@ pub mod loop_manager;
 pub mod prompt_builder;
 pub mod status;
 
-use std::path::PathBuf;
-use std::process::Command;
-use tauri::command;
 use crate::engine::state;
 use crate::models::*;
 use credentials::{
-    resolve_api_credentials, resolve_runtime_config_impl, load_project_config,
-    SelectedProvider, auto_select_provider_internal,
+    auto_select_provider_internal, load_project_config, resolve_api_credentials,
+    resolve_runtime_config_impl, SelectedProvider,
 };
+use std::path::PathBuf;
+use std::process::Command;
+use tauri::command;
 
 // Re-export for use by other modules (e.g. system.rs)
-pub use credentials::{resolve_engine_binary, find_binary};
+pub use credentials::{find_binary, resolve_engine_binary};
 
 /// Create a Command that suppresses visible console windows on Windows.
 #[cfg(target_os = "windows")]
@@ -143,9 +143,7 @@ pub fn test_api_call(engine: String, model: String, message: String) -> Result<S
 }
 
 #[command]
-pub fn get_project_runtime_override(
-    project_dir: String,
-) -> Result<ProjectRuntimeOverride, String> {
+pub fn get_project_runtime_override(project_dir: String) -> Result<ProjectRuntimeOverride, String> {
     status::get_project_runtime_override_impl(&project_dir)
 }
 

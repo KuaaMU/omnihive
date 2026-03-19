@@ -1,5 +1,5 @@
-use regex::Regex;
 use crate::types::GuardrailConfig;
+use regex::Regex;
 
 const DEFAULT_FORBIDDEN: &[&str] = &[
     "gh repo delete",
@@ -51,7 +51,9 @@ pub fn validate_config_guardrails(config: &GuardrailConfig) -> Vec<String> {
     let mut warnings = Vec::new();
 
     if config.forbidden.is_empty() {
-        warnings.push("No forbidden commands configured. Consider adding safety guardrails.".to_string());
+        warnings.push(
+            "No forbidden commands configured. Consider adding safety guardrails.".to_string(),
+        );
     }
 
     if !config.require_critic_review {
