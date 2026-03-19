@@ -1,5 +1,6 @@
 use std::path::Path;
 use omnihive_core::eval;
+use omnihive_core::runner;
 use omnihive_core::task_model;
 use omnihive_core::trace_export;
 
@@ -176,6 +177,59 @@ pub fn eval_cmd(trace_path: &Path, output: Option<&Path>) -> Result<(), String> 
             .map_err(|e| format!("Failed to write report: {}", e))?;
         println!("\nReport written to: {}", output_path.display());
     }
+
+    Ok(())
+}
+
+/// Submit a task for execution.
+pub fn submit(
+    goal: &str,
+    budget: Option<f64>,
+    policy: &str,
+    max_steps: u32,
+    dir: &Path,
+) -> Result<(), String> {
+    use omnihive_core::tool_protocol::ToolRegistry;
+    use omnihive_core::tools::shell::{ShellTool, ShellToolConfig};
+    use omnihive_core::tools::filesystem::FileSystemTool;
+
+    let policy_mode = match policy {
+        "default" => runner::PolicyMode::Default,
+        _ => runner::PolicyMode::Permissive,
+    };
+
+    let config = runner::SubmitConfig {
+        goal: goal.to_string(),
+        budget,
+        max_steps,
+        policy: policy_mode,
+        agents: vec!["default".to_string()],
+    };
+
+    // Register available tools
+    let mut registry = ToolRegistry::new();
+    registry.register(Box::new(ShellTool::new(ShellToolConfig {
+        allowed_dirs: vec![dir.display().to_string()],
+        ..Default::default()
+    })));
+    registry.register(Box::new(FileSystemTool::new()));
+
+    println!("Submitting task: {}", goal);
+    if let Some(b) = budget {
+        println!("Budget: ${:.2}", b);
+    }
+    println!("Max steps: {}", max_steps);
+    println!("Policy: {}", policy);
+    println!();
+
+    let result = runner::run_task(dir, &config, &registry)?;
+
+    println!("Task: {}", result.task_id);
+    println!("Trace: {}", result.trace_id);
+    println!("Status: {}", result.status);
+    println!("Steps completed: {}", result.steps_completed);
+    println!("Total cost: ${:.4}", result.total_cost);
+    println!("Trace file: {}", result.trace_file);
 
     Ok(())
 }

@@ -41,6 +41,25 @@ enum Commands {
         data: PathBuf,
     },
 
+    /// Submit a task for execution
+    Submit {
+        /// Goal description for the task
+        #[arg(long)]
+        goal: String,
+        /// Maximum budget in dollars (optional)
+        #[arg(long)]
+        budget: Option<f64>,
+        /// Policy mode: permissive or default
+        #[arg(long, default_value = "permissive")]
+        policy: String,
+        /// Maximum number of steps
+        #[arg(long, default_value = "20")]
+        max_steps: u32,
+        /// Project directory (default: current)
+        #[arg(long, default_value = ".")]
+        dir: PathBuf,
+    },
+
     /// Compute eval metrics from trace JSONL files
     Eval {
         /// Path to trace JSONL file or directory containing .jsonl files
@@ -59,6 +78,9 @@ fn main() {
         Commands::Replay { trace_file, task_id } => commands::replay(&trace_file, task_id.as_deref()),
         Commands::Watch { task_id, dir } => commands::watch(&task_id, &dir),
         Commands::Validate { schema, data } => commands::validate(&schema, &data),
+        Commands::Submit { goal, budget, policy, max_steps, dir } => {
+            commands::submit(&goal, budget, &policy, max_steps, &dir)
+        }
         Commands::Eval { trace_path, output } => commands::eval_cmd(&trace_path, output.as_deref()),
     };
 
