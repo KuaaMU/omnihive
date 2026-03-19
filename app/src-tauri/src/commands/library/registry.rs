@@ -129,9 +129,12 @@ pub(crate) fn get_library_dir() -> Option<PathBuf> {
         return Some(cwd_lib);
     }
 
-    let known = PathBuf::from("F:/omnihive/library");
-    if known.exists() {
-        return Some(known);
+    // Allow override via environment variable
+    if let Ok(env_lib) = std::env::var("OMNIHIVE_LIBRARY_DIR") {
+        let env_path = PathBuf::from(&env_lib);
+        if env_path.exists() {
+            return Some(env_path);
+        }
     }
 
     None

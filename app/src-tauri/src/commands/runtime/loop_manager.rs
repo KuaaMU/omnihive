@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -65,7 +65,7 @@ pub(crate) fn start_loop_impl(
 
 // ===== Stop Loop =====
 
-pub(crate) fn stop_loop_impl(project_dir: &str, dir: &PathBuf) -> Result<bool, String> {
+pub(crate) fn stop_loop_impl(project_dir: &str, dir: &Path) -> Result<bool, String> {
     let stopped = {
         let loops = RUNNING_LOOPS.lock().map_err(|e| e.to_string())?;
         if let Some(flag) = loops.get(project_dir) {
@@ -87,6 +87,7 @@ pub(crate) fn stop_loop_impl(project_dir: &str, dir: &PathBuf) -> Result<bool, S
 
 // ===== Background Loop =====
 
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip(credentials, stop_flag), fields(agents = %agent_roles.len()))]
 fn run_loop(
     dir: PathBuf,

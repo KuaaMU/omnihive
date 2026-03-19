@@ -7,9 +7,8 @@ struct PersonaYaml {
     name: String,
     #[serde(default)]
     role: String,
-    #[allow(dead_code)]
-    #[serde(default)]
-    layer: String,
+    #[serde(default, rename = "layer")]
+    _layer: String,
     #[serde(default)]
     mental_models: Vec<String>,
     #[serde(default)]

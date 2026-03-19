@@ -193,7 +193,7 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
     let mut workflows = Vec::new();
 
     // Only include workflows where all chain roles exist
-    let pricing_chain = vec!["research", "cfo", "product", "marketing", "critic", "cfo"];
+    let pricing_chain = ["research", "cfo", "product", "marketing", "critic", "cfo"];
     if pricing_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "pricing-monetization".to_string(),
@@ -204,7 +204,7 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
         });
     }
 
-    let launch_chain = vec!["marketing", "research", "sales", "marketing", "devops", "ceo"];
+    let launch_chain = ["marketing", "research", "sales", "marketing", "devops", "ceo"];
     if launch_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "product-launch".to_string(),
@@ -215,7 +215,7 @@ pub fn build_config(prompt: &str) -> FactoryConfig {
         });
     }
 
-    let review_chain = vec!["research", "cfo", "marketing", "qa", "ceo", "critic"];
+    let review_chain = ["research", "cfo", "marketing", "qa", "ceo", "critic"];
     if review_chain.iter().all(|r| all_roles.contains(r)) {
         workflows.push(WorkflowConfig {
             id: "weekly-review".to_string(),

@@ -20,7 +20,8 @@ impl GitHubTool {
             .output()
             .map_err(|e| {
                 ToolError::execution_failed(&format!(
-                    "Failed to run gh CLI (is it installed?): {}",
+                    "Failed to run `gh {}` (is it installed?): {}",
+                    args.join(" "),
                     e
                 ))
             })?;
@@ -38,7 +39,7 @@ impl GitHubTool {
             .current_dir(working_dir)
             .output()
             .map_err(|e| {
-                ToolError::execution_failed(&format!("Failed to run git: {}", e))
+                ToolError::execution_failed(&format!("Failed to run `git {}`: {}", args.join(" "), e))
             })?;
 
         let stdout = String::from_utf8_lossy(&result.stdout).to_string();
