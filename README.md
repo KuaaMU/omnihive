@@ -153,6 +153,9 @@ You need at least one AI coding CLI installed:
 
 ## Project Structure
 
+> Phase 1 migration note: the new control-plane monorepo scaffolding now lives under `apps/`, `crates/`, `packages/`, `plugins/`, and `schemas/`.
+> The current build path remains `app/` during incremental migration. See `docs/architecture/layers.md` for layer boundaries and dependency rules.
+
 ```
 omnihive/
 ├── .github/                       # CI/CD & community
