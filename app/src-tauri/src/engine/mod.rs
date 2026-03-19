@@ -1,10 +1,13 @@
 pub mod api_client;
 pub mod bootstrap;
+pub mod checkpoint;
 pub mod extract;
 pub mod generator;
 pub mod guardrails;
 pub mod logging;
 pub mod memory;
+pub mod policy_engine;
+pub mod retry;
 pub mod state;
 pub mod state_machine;
 pub mod task_model;

@@ -4,9 +4,10 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use crate::engine::{extract, state, state_machine, task_model};
+use crate::engine::{extract, state, state_machine, task_model, checkpoint};
 use crate::engine::state_machine::{TaskStatus, TaskEvent};
 use crate::engine::task_model::{Task, Step};
+use crate::engine::checkpoint::Checkpoint;
 use crate::models::CycleResult;
 use super::credentials::ApiCredentials;
 use super::cycle_executor::{run_api_cycle, load_cycle_history, save_cycle_history};
@@ -296,6 +297,12 @@ fn run_loop(
         task_model::write_task_state(&dir, &current_task).ok();
         state::write_state(&dir, "running", cycle, cycle, current_task.consecutive_errors).ok();
         save_cycle_history(&dir, &history);
+
+        // Save checkpoint for crash recovery
+        let consensus = std::fs::read_to_string(dir.join("memories/consensus.md"))
+            .unwrap_or_default();
+        let cp = Checkpoint::from_task(&current_task, &consensus);
+        checkpoint::save_checkpoint(&dir, &cp).ok();
 
         sleep_with_stop_check(loop_interval, &stop_flag);
     }
