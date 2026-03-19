@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omnihive.dev/schemas/step.schema.json",
+  "title": "Step",
+  "description": "A single execution step within a task (one API cycle).",
+  "type": "object",
+  "required": ["step_id", "task_id", "agent_id", "status", "started_at"],
+  "properties": {
+    "step_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Parent task reference."
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Agent role performing this step."
+    },
+    "tool_call": {
+      "type": ["string", "null"],
+      "description": "Tool invoked during this step, if any."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "RUNNING", "SUCCESS", "FAILED", "SKIPPED", "BLOCKED"]
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "idempotency_key": {
+      "type": ["string", "null"],
+      "description": "SHA-256 hash for deduplication on resume."
+    },
+    "input_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "output_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "response_preview": {
+      "type": ["string", "null"],
+      "description": "Truncated response text."
+    },
+    "error": {
+      "type": ["string", "null"]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "step_id": "11111111-2222-3333-4444-555555555555",
+      "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "agent_id": "ceo",
+      "tool_call": null,
+      "status": "SUCCESS",
+      "retry_count": 0,
+      "idempotency_key": "sha256:abc123...",
+      "input_tokens": 4200,
+      "output_tokens": 1800,
+      "response_preview": "Decided to focus on landing page...",
+      "error": null,
+      "started_at": "2025-06-01T10:00:00Z",
+      "ended_at": "2025-06-01T10:00:45Z"
+    },
+    {
+      "step_id": "22222222-3333-4444-5555-666666666666",
+      "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "agent_id": "fullstack",
+      "tool_call": null,
+      "status": "FAILED",
+      "retry_count": 2,
+      "idempotency_key": null,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "response_preview": null,
+      "error": "API timeout after 30s",
+      "started_at": "2025-06-01T10:01:00Z",
+      "ended_at": "2025-06-01T10:01:30Z"
+    }
+  ]
+}

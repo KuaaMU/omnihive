@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omnihive.dev/schemas/policy.schema.json",
+  "title": "Policy",
+  "description": "A security policy with default-deny evaluation rules.",
+  "type": "object",
+  "required": ["policy_id", "rules"],
+  "properties": {
+    "policy_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "effect"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action pattern to match (e.g. 'shell.execute', 'fs.write', '*')."
+          },
+          "effect": {
+            "type": "string",
+            "enum": ["allow", "deny"],
+            "description": "Whether to allow or deny the matched action."
+          },
+          "conditions": {
+            "type": "object",
+            "description": "Additional conditions for the rule.",
+            "properties": {
+              "paths": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Path patterns this rule applies to."
+              },
+              "commands": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Command patterns this rule applies to."
+              },
+              "agents": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Agent roles this rule applies to."
+              }
+            },
+            "additionalProperties": true
+          },
+          "priority": {
+            "type": "integer",
+            "default": 0,
+            "description": "Higher priority rules are evaluated first."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "policy_id": "default",
+      "name": "Default Policy",
+      "description": "Permissive default policy for development.",
+      "rules": [
+        { "action": "fs.read", "effect": "allow" },
+        { "action": "fs.write", "effect": "allow", "conditions": { "paths": ["projects/*"] } },
+        { "action": "shell.execute", "effect": "deny", "conditions": { "commands": ["rm -rf /", "git push --force main"] }, "priority": 100 },
+        { "action": "shell.execute", "effect": "allow", "conditions": { "paths": ["projects/*"] } }
+      ]
+    },
+    {
+      "policy_id": "strict",
+      "name": "Strict Policy",
+      "description": "Locked-down policy for production use.",
+      "rules": [
+        { "action": "fs.read", "effect": "allow" },
+        { "action": "fs.write", "effect": "deny" },
+        { "action": "shell.execute", "effect": "deny" }
+      ]
+    }
+  ]
+}

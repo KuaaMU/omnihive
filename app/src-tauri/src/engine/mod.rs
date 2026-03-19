@@ -6,3 +6,5 @@ pub mod guardrails;
 pub mod logging;
 pub mod memory;
 pub mod state;
+pub mod state_machine;
+pub mod task_model;

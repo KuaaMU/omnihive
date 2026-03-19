@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omnihive.dev/schemas/tool.schema.json",
+  "title": "Tool",
+  "description": "A tool that agents can invoke during execution.",
+  "type": "object",
+  "required": ["tool_id", "name"],
+  "properties": {
+    "tool_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable tool name."
+    },
+    "input_schema": {
+      "type": "object",
+      "description": "JSON Schema describing the tool's input.",
+      "additionalProperties": true
+    },
+    "output_schema": {
+      "type": "object",
+      "description": "JSON Schema describing the tool's output.",
+      "additionalProperties": true
+    },
+    "permissions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Required permissions to use this tool."
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 30000
+    },
+    "idempotent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether repeated calls with same input produce same result."
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "tool_id": "shell",
+      "name": "Shell Execute",
+      "input_schema": { "type": "object", "properties": { "command": { "type": "string" } }, "required": ["command"] },
+      "output_schema": { "type": "object", "properties": { "stdout": { "type": "string" }, "stderr": { "type": "string" }, "exit_code": { "type": "integer" } } },
+      "permissions": ["shell.execute"],
+      "timeout_ms": 60000,
+      "idempotent": false
+    },
+    {
+      "tool_id": "file_read",
+      "name": "File Read",
+      "input_schema": { "type": "object", "properties": { "path": { "type": "string" } }, "required": ["path"] },
+      "output_schema": { "type": "object", "properties": { "content": { "type": "string" } } },
+      "permissions": ["fs.read"],
+      "timeout_ms": 5000,
+      "idempotent": true
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omnihive.dev/schemas/trace.schema.json",
+  "title": "Trace Event",
+  "description": "A single trace event in JSONL format (append-only log).",
+  "type": "object",
+  "required": ["trace_id", "event_type", "timestamp"],
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "task_id": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "step_id": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "task_created", "task_status_change",
+        "step_started", "step_completed", "step_failed", "step_retried",
+        "policy_check", "policy_block",
+        "consensus_updated", "reflection_saved", "handoff_saved",
+        "skill_requested", "skill_injected",
+        "api_call", "api_response", "api_error",
+        "checkpoint_saved", "checkpoint_restored"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data.",
+      "additionalProperties": true
+    },
+    "cost": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Estimated cost in USD for this event."
+    },
+    "latency_ms": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Duration of the operation in milliseconds."
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "trace_id": "f0e1d2c3-b4a5-6789-0fed-cba987654321",
+      "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "step_id": "11111111-2222-3333-4444-555555555555",
+      "event_type": "step_completed",
+      "timestamp": "2025-06-01T10:00:45Z",
+      "payload": {
+        "agent": "ceo",
+        "input_tokens": 4200,
+        "output_tokens": 1800,
+        "consensus_updated": true
+      },
+      "cost": 0.042,
+      "latency_ms": 45000
+    },
+    {
+      "trace_id": "f0e1d2c3-b4a5-6789-0fed-cba987654321",
+      "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "step_id": null,
+      "event_type": "policy_block",
+      "timestamp": "2025-06-01T10:01:00Z",
+      "payload": {
+        "action": "shell_execute",
+        "command": "rm -rf /",
+        "rule_id": "default-forbidden",
+        "reason": "Dangerous command blocked"
+      },
+      "cost": null,
+      "latency_ms": 1
+    }
+  ]
+}

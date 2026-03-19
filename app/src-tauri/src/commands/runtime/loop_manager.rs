@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use crate::engine::{extract, state};
+use crate::engine::{extract, state, state_machine, task_model};
+use crate::engine::state_machine::{TaskStatus, TaskEvent};
+use crate::engine::task_model::{Task, Step};
 use crate::models::CycleResult;
 use super::credentials::ApiCredentials;
 use super::cycle_executor::{run_api_cycle, load_cycle_history, save_cycle_history};
@@ -26,7 +28,6 @@ pub(crate) fn start_loop_impl(
     cycle_timeout: u32,
     max_errors: u32,
 ) -> Result<bool, String> {
-    // Check if already running
     {
         let loops = RUNNING_LOOPS.lock().map_err(|e| e.to_string())?;
         if let Some(flag) = loops.get(&project_dir) {
@@ -36,17 +37,14 @@ pub(crate) fn start_loop_impl(
         }
     }
 
-    // Create stop flag
     let stop_flag = Arc::new(AtomicBool::new(false));
     let stop_clone = Arc::clone(&stop_flag);
 
-    // Store in running loops
     {
         let mut loops = RUNNING_LOOPS.lock().map_err(|e| e.to_string())?;
         loops.insert(project_dir.clone(), Arc::clone(&stop_flag));
     }
 
-    // Spawn background thread
     let project_dir_clone = project_dir.clone();
     thread::spawn(move || {
         run_loop(
@@ -99,14 +97,42 @@ fn run_loop(
     max_errors: u32,
     stop_flag: Arc<AtomicBool>,
 ) {
-    let mut cycle: u32 = 0;
-    let mut errors: u32 = 0;
+    // Create a Task for this loop execution
+    let goal = format!("Autonomous loop for {}", project_dir);
+    let task = Task::new(&project_dir, &goal, agent_roles.clone());
+    let task = task.with_status(
+        state_machine::transition(task.status, TaskEvent::PlanComplete)
+            .unwrap_or(TaskStatus::Running),
+    );
+
+    let task_id = task.task_id.clone();
+    let trace_id = task.trace_id.clone();
+
+    // Write initial task state (JSON format)
+    task_model::write_task_state(&dir, &task).ok();
+
+    let _task_span = tracing::info_span!(
+        "task",
+        task_id = %task_id,
+        trace_id = %trace_id,
+    )
+    .entered();
+
+    tracing::info!(
+        agents = %agent_roles.len(),
+        interval = loop_interval,
+        timeout = cycle_timeout,
+        "Task started"
+    );
+
+    let mut current_task = task;
     let mut history: Vec<CycleResult> = load_cycle_history(&dir);
 
     state::append_log(
         &dir,
         &format!(
-            "Loop started | {} agents: [{}] | interval={}s timeout={}s max_errors={}",
+            "Loop started [task={}] | {} agents: [{}] | interval={}s timeout={}s max_errors={}",
+            &task_id[..8],
             agent_roles.len(),
             agent_roles.join(", "),
             loop_interval,
@@ -115,10 +141,20 @@ fn run_loop(
         ),
     );
 
+    // Also maintain legacy state for backward compat
+    state::write_state(&dir, "running", 0, 0, 0).ok();
+
+    let mut cycle: u32 = 0;
+
     loop {
         if stop_flag.load(Ordering::Relaxed) {
             state::append_log(&dir, "Loop stopped by user");
-            state::write_state(&dir, "stopped", cycle, cycle, errors).ok();
+            current_task = current_task.with_status(
+                state_machine::transition(current_task.status, TaskEvent::UserCancel)
+                    .unwrap_or(TaskStatus::Cancelled),
+            );
+            task_model::write_task_state(&dir, &current_task).ok();
+            state::write_state(&dir, "stopped", cycle, cycle, current_task.consecutive_errors).ok();
             break;
         }
 
@@ -126,13 +162,25 @@ fn run_loop(
         let agent_idx = ((cycle - 1) as usize) % agent_roles.len();
         let current_agent = &agent_roles[agent_idx];
 
+        // Create a Step for this cycle
+        let step = Step::new(&task_id, current_agent);
+        let step_id = step.step_id.clone();
+
+        let _step_span = tracing::info_span!(
+            "step",
+            step_id = %step_id,
+            agent = %current_agent,
+            cycle = %cycle,
+        )
+        .entered();
+
         state::append_log(
             &dir,
-            &format!("=== Cycle {} | Agent: {} ===", cycle, current_agent),
+            &format!("=== Cycle {} | Agent: {} | step={} ===", cycle, current_agent, &step_id[..8]),
         );
 
         let started_at = chrono::Local::now().format("%+").to_string();
-        state::write_state(&dir, "running", cycle, cycle, errors).ok();
+        state::write_state(&dir, "running", cycle, cycle, current_task.consecutive_errors).ok();
 
         let result = run_api_cycle(
             &dir,
@@ -147,8 +195,17 @@ fn run_loop(
 
         match result {
             Ok((output, input_tokens, output_tokens)) => {
-                errors = 0;
                 let preview = extract::truncate_string(&output, 200);
+
+                // Update step (immutable)
+                let completed_step = step.completed(input_tokens, output_tokens, &preview);
+
+                tracing::info!(
+                    input_tokens = input_tokens,
+                    output_tokens = output_tokens,
+                    "Step completed"
+                );
+
                 state::append_log(
                     &dir,
                     &format!(
@@ -161,34 +218,35 @@ fn run_loop(
                     &project_dir,
                     "cycle_complete",
                     current_agent,
-                    &format!(
-                        "Cycle {} completed ({}+{} tokens)",
-                        cycle, input_tokens, output_tokens
-                    ),
+                    &format!("Cycle {} completed ({}+{} tokens)", cycle, input_tokens, output_tokens),
                     &preview,
                 );
 
+                // Update task (immutable)
+                current_task = current_task.with_step_completed(&completed_step.step_id);
+
+                // Backward compat: also push to CycleResult history
                 history.push(CycleResult {
                     cycle_number: cycle,
                     started_at,
                     completed_at,
                     agent_role: current_agent.clone(),
-                    action: format!(
-                        "{} analysis ({}+{} tokens)",
-                        current_agent, input_tokens, output_tokens
-                    ),
+                    action: format!("{} analysis ({}+{} tokens)", current_agent, input_tokens, output_tokens),
                     outcome: preview,
                     files_changed: vec![],
                     error: None,
                 });
             }
             Err(err) => {
-                errors += 1;
+                let _failed_step = step.failed(&err);
+
+                tracing::warn!(error = %err, "Step failed");
+
                 state::append_log(
                     &dir,
                     &format!(
                         "ERROR: Cycle {} failed: {} (consecutive: {})",
-                        cycle, err, errors
+                        cycle, err, current_task.consecutive_errors + 1
                     ),
                 );
 
@@ -196,9 +254,11 @@ fn run_loop(
                     &project_dir,
                     "cycle_error",
                     current_agent,
-                    &format!("Cycle {} failed (error {})", cycle, errors),
+                    &format!("Cycle {} failed (error {})", cycle, current_task.consecutive_errors + 1),
                     &extract::truncate_string(&err, 200),
                 );
+
+                current_task = current_task.with_error(&err);
 
                 history.push(CycleResult {
                     cycle_number: cycle,
@@ -211,7 +271,7 @@ fn run_loop(
                     error: Some(err),
                 });
 
-                if errors >= max_errors {
+                if current_task.consecutive_errors >= max_errors {
                     state::append_log(
                         &dir,
                         &format!(
@@ -219,7 +279,12 @@ fn run_loop(
                             max_errors
                         ),
                     );
-                    state::write_state(&dir, "error", cycle, cycle, errors).ok();
+                    current_task = current_task.with_status(
+                        state_machine::transition(current_task.status, TaskEvent::MaxRetriesExceeded)
+                            .unwrap_or(TaskStatus::Failed),
+                    );
+                    task_model::write_task_state(&dir, &current_task).ok();
+                    state::write_state(&dir, "error", cycle, cycle, current_task.consecutive_errors).ok();
                     save_cycle_history(&dir, &history);
                     cleanup_loop(&project_dir);
                     return;
@@ -227,7 +292,9 @@ fn run_loop(
             }
         }
 
-        state::write_state(&dir, "running", cycle, cycle, errors).ok();
+        // Persist state after each cycle
+        task_model::write_task_state(&dir, &current_task).ok();
+        state::write_state(&dir, "running", cycle, cycle, current_task.consecutive_errors).ok();
         save_cycle_history(&dir, &history);
 
         sleep_with_stop_check(loop_interval, &stop_flag);
