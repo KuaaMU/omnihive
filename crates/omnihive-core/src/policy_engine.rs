@@ -68,6 +68,7 @@ pub struct ToolRequest {
 
 // ===== Policy Engine =====
 
+#[derive(Debug)]
 pub struct PolicyEngine {
     rules: Vec<PolicyRule>,
 }

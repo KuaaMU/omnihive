@@ -40,6 +40,15 @@ enum Commands {
         /// Path to data file to validate
         data: PathBuf,
     },
+
+    /// Compute eval metrics from trace JSONL files
+    Eval {
+        /// Path to trace JSONL file or directory containing .jsonl files
+        trace_path: PathBuf,
+        /// Output JSON report to file (optional)
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -50,6 +59,7 @@ fn main() {
         Commands::Replay { trace_file, task_id } => commands::replay(&trace_file, task_id.as_deref()),
         Commands::Watch { task_id, dir } => commands::watch(&task_id, &dir),
         Commands::Validate { schema, data } => commands::validate(&schema, &data),
+        Commands::Eval { trace_path, output } => commands::eval_cmd(&trace_path, output.as_deref()),
     };
 
     if let Err(e) = result {

@@ -1,4 +1,5 @@
 use std::path::Path;
+use omnihive_core::eval;
 use omnihive_core::task_model;
 use omnihive_core::trace_export;
 
@@ -149,5 +150,32 @@ pub fn validate(schema_path: &Path, data_path: &Path) -> Result<(), String> {
     println!("Schema: {} (valid JSON)", schema_path.display());
     println!("Data:   {} (valid JSON)", data_path.display());
     println!("Basic validation passed.");
+    Ok(())
+}
+
+/// Compute eval metrics from trace JSONL files.
+pub fn eval_cmd(trace_path: &Path, output: Option<&Path>) -> Result<(), String> {
+    let report = if trace_path.is_dir() {
+        eval::eval_from_dir(trace_path)?
+    } else {
+        eval::eval_from_file(trace_path)?
+    };
+
+    // Print human-readable report
+    print!("{}", eval::format_report(&report));
+
+    // Optionally write JSON report
+    if let Some(output_path) = output {
+        if let Some(parent) = output_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create output directory: {}", e))?;
+        }
+        let json = serde_json::to_string_pretty(&report)
+            .map_err(|e| format!("Failed to serialize report: {}", e))?;
+        std::fs::write(output_path, &json)
+            .map_err(|e| format!("Failed to write report: {}", e))?;
+        println!("\nReport written to: {}", output_path.display());
+    }
+
     Ok(())
 }
