@@ -167,7 +167,8 @@ pub fn run_task(
                     "command".to_string(),
                     serde_json::json!(format!(
                         "echo 'Step {} for goal: {}'",
-                        step_index, config.goal
+                        step_index,
+                        config.goal.replace('\'', "'\\''")
                     )),
                 );
                 m
@@ -254,11 +255,20 @@ pub fn run_task(
 
     // If we exhausted max_steps without failure, mark success
     if task.status == TaskStatus::Running {
-        let new_status = state_machine::transition(task.status, TaskEvent::AllStepsComplete)
-            .map_err(|e| format!("State transition error: {}", e))?;
-        task = task.with_status(new_status);
-        task_model::write_task_state(project_dir, &task)?;
-        emit_trace(&trace_file, &task, "task_completed", None)?;
+        if task.consecutive_errors > 0 {
+            // Last step(s) failed but didn't hit the retry limit
+            let new_status = state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
+                .map_err(|e| format!("State transition error: {}", e))?;
+            task = task.with_status(new_status);
+            task_model::write_task_state(project_dir, &task)?;
+            emit_trace(&trace_file, &task, "task_failed", None)?;
+        } else {
+            let new_status = state_machine::transition(task.status, TaskEvent::AllStepsComplete)
+                .map_err(|e| format!("State transition error: {}", e))?;
+            task = task.with_status(new_status);
+            task_model::write_task_state(project_dir, &task)?;
+            emit_trace(&trace_file, &task, "task_completed", None)?;
+        }
     }
 
     // Cleanup checkpoint on completion
