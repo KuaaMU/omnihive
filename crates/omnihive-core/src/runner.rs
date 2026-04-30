@@ -176,49 +176,51 @@ pub fn run_task(
         };
 
         match registry.execute(&input, &ctx) {
-            Ok(output) if output.success => {
-                let completed_step = step.completed(0, 0, &format!("{:?}", output.data));
-                task = task.with_step_completed(&completed_step.step_id);
-
+            Ok(output) => {
+                // Always accumulate cost regardless of success/failure
                 if let Some(cost) = output.metadata.get("cost").and_then(|v| v.as_f64()) {
                     total_cost += cost;
                 }
 
-                emit_trace_step(
-                    &trace_file,
-                    &task,
-                    &completed_step,
-                    "step_completed",
-                    agent,
-                    None,
-                    None,
-                )?;
-            }
-            Ok(output) => {
-                let err_msg = output
-                    .error
-                    .unwrap_or_else(|| "Tool returned failure".to_string());
-                let failed_step = step.failed(&err_msg);
-                task = task.with_error(&err_msg);
+                if output.success {
+                    let completed_step = step.completed(0, 0, &format!("{:?}", output.data));
+                    task = task.with_step_completed(&completed_step.step_id);
 
-                emit_trace_step(
-                    &trace_file,
-                    &task,
-                    &failed_step,
-                    "step_failed",
-                    agent,
-                    None,
-                    None,
-                )?;
+                    emit_trace_step(
+                        &trace_file,
+                        &task,
+                        &completed_step,
+                        "step_completed",
+                        agent,
+                        None,
+                        None,
+                    )?;
+                } else {
+                    let err_msg = output
+                        .error
+                        .unwrap_or_else(|| "Tool returned failure".to_string());
+                    let failed_step = step.failed(&err_msg);
+                    task = task.with_error(&err_msg);
 
-                if task.consecutive_errors >= 3 {
-                    let new_status =
-                        state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
-                            .map_err(|e| format!("State transition error: {}", e))?;
-                    task = task.with_status(new_status);
-                    task_model::write_task_state(project_dir, &task)?;
-                    emit_trace(&trace_file, &task, "task_failed", None)?;
-                    break;
+                    emit_trace_step(
+                        &trace_file,
+                        &task,
+                        &failed_step,
+                        "step_failed",
+                        agent,
+                        None,
+                        None,
+                    )?;
+
+                    if task.consecutive_errors >= 3 {
+                        let new_status =
+                            state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
+                                .map_err(|e| format!("State transition error: {}", e))?;
+                        task = task.with_status(new_status);
+                        task_model::write_task_state(project_dir, &task)?;
+                        emit_trace(&trace_file, &task, "task_failed", None)?;
+                        break;
+                    }
                 }
             }
             Err(tool_err) => {
@@ -529,5 +531,147 @@ mod tests {
         assert_eq!(config.max_steps, 20);
         assert!(config.budget.is_none());
         assert!(config.goal.is_empty());
+    }
+
+    /// Tool that returns failure with cost metadata (simulates a billed-but-failed API call).
+    struct CostlyFailTool;
+
+    impl Tool for CostlyFailTool {
+        fn name(&self) -> &str {
+            "costly_fail"
+        }
+        fn schema(&self) -> ToolSchema {
+            ToolSchema {
+                tool_id: "costly-fail-v1".to_string(),
+                name: "costly_fail".to_string(),
+                description: "Fails but reports cost".to_string(),
+                input_schema: serde_json::json!({}),
+                output_schema: serde_json::json!({}),
+                permissions: vec![],
+                timeout_ms: 5000,
+                idempotent: false,
+            }
+        }
+        fn execute(
+            &self,
+            _input: &ToolInput,
+            _ctx: &ExecutionContext,
+        ) -> Result<ToolOutput, ToolError> {
+            Ok(ToolOutput::err("simulated failure").with_metadata("cost", serde_json::json!(0.05)))
+        }
+    }
+
+    /// Regression: cost must be accumulated even when the tool returns success=false.
+    #[test]
+    fn test_run_task_cost_accumulated_on_failure() {
+        let dir = std::env::temp_dir().join("omnihive_test_runner_cost_fail");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(CostlyFailTool));
+
+        let config = SubmitConfig {
+            goal: "cost test".to_string(),
+            budget: Some(10.0), // high budget so we don't hit it
+            max_steps: 3,
+            ..Default::default()
+        };
+
+        let result = run_task(&dir, &config, &registry).unwrap();
+        // 3 failed steps × $0.05 each = $0.15
+        assert!(
+            result.total_cost > 0.0,
+            "Cost should be accumulated from failed tool calls, got {}",
+            result.total_cost
+        );
+        assert!(
+            (result.total_cost - 0.15).abs() < 1e-10,
+            "Expected total_cost ≈ 0.15, got {}",
+            result.total_cost
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Tool that captures the command it receives, for injection testing.
+    struct CapturingTool {
+        received_command: std::sync::Arc<std::sync::Mutex<Option<String>>>,
+    }
+
+    impl Tool for CapturingTool {
+        fn name(&self) -> &str {
+            "capture"
+        }
+        fn schema(&self) -> ToolSchema {
+            ToolSchema {
+                tool_id: "capture-v1".to_string(),
+                name: "capture".to_string(),
+                description: "Captures command".to_string(),
+                input_schema: serde_json::json!({}),
+                output_schema: serde_json::json!({}),
+                permissions: vec![],
+                timeout_ms: 5000,
+                idempotent: true,
+            }
+        }
+        fn execute(
+            &self,
+            input: &ToolInput,
+            _ctx: &ExecutionContext,
+        ) -> Result<ToolOutput, ToolError> {
+            if let Some(cmd) = input.params.get("command") {
+                if let Some(s) = cmd.as_str() {
+                    *self.received_command.lock().unwrap() = Some(s.to_string());
+                }
+            }
+            Ok(ToolOutput::ok(serde_json::json!({"ok": true})))
+        }
+    }
+
+    /// Regression: goals containing single quotes must not break shell quoting.
+    #[test]
+    fn test_run_task_goal_with_quotes() {
+        let dir = std::env::temp_dir().join("omnihive_test_runner_quotes");
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::create_dir_all(&dir);
+
+        // Share the captured command between the registered tool and the test
+        let captured = std::sync::Arc::new(std::sync::Mutex::new(None::<String>));
+        let captured_ref = std::sync::Arc::clone(&captured);
+
+        let mut registry = ToolRegistry::new();
+        registry.register(Box::new(CapturingTool {
+            received_command: captured_ref,
+        }));
+
+        // Goal with single quotes that would break naive shell interpolation
+        let config = SubmitConfig {
+            goal: "it's a can't-miss goal".to_string(),
+            max_steps: 1,
+            ..Default::default()
+        };
+
+        let result = run_task(&dir, &config, &registry).unwrap();
+        assert_eq!(result.status, TaskStatus::Success);
+
+        // Verify the command string escaped the single quotes properly
+        let cmd = captured.lock().unwrap();
+        let cmd_str = cmd.as_ref().expect("tool should have received a command");
+        // The escaped form should contain '\'' instead of raw '
+        assert!(
+            cmd_str.contains("'\\''"),
+            "Single quotes should be escaped with '\\'' , got: {}",
+            cmd_str
+        );
+        // Should NOT contain unescaped 'it's' pattern (quote followed by s followed by non-quote-escape)
+        // The goal text should appear properly escaped
+        assert!(
+            cmd_str.contains("can'\\''t-miss"),
+            "Expected escaped can't-miss in command, got: {}",
+            cmd_str
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
