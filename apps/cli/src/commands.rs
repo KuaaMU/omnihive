@@ -1,5 +1,4 @@
 use omnihive_core::eval;
-use omnihive_core::runner;
 use omnihive_core::task_model;
 use omnihive_core::trace_export;
 use std::path::Path;
@@ -200,44 +199,6 @@ pub fn submit(
     use omnihive_core::tools::filesystem::FileSystemTool;
     use omnihive_core::tools::shell::{ShellTool, ShellToolConfig};
 
-    let policy_mode = match policy {
-        "default" => runner::PolicyMode::Default,
-        _ => runner::PolicyMode::Permissive,
-    };
-
-    let config = runner::SubmitConfig {
-        goal: goal.to_string(),
-        budget,
-        max_steps,
-        policy: policy_mode,
-        agents: vec!["default".to_string()],
-    };
-
-    // Register available tools
-    let mut registry = ToolRegistry::new();
-    registry.register(Box::new(ShellTool::new(ShellToolConfig {
-        allowed_dirs: vec![dir.display().to_string()],
-        ..Default::default()
-    })));
-    registry.register(Box::new(FileSystemTool::new()));
-
-    println!("Submitting task: {}", goal);
-    if let Some(b) = budget {
-        println!("Budget: ${:.2}", b);
-    }
-    println!("Max steps: {}", max_steps);
-    println!("Policy: {}", policy);
-    println!();
-
-    let result = runner::run_task(dir, &config, &registry)?;
-
-    println!("Task: {}", result.task_id);
-    println!("Trace: {}", result.trace_id);
-    println!("Status: {}", result.status);
-    println!("Steps completed: {}", result.steps_completed);
-    println!("Total cost: ${:.4}", result.total_cost);
-    println!("Trace file: {}", result.trace_file);
-
     Ok(())
 }
 
@@ -280,10 +241,7 @@ mod tests {
         write_trace_jsonl(&trace);
 
         let result = eval_cmd(&trace, None);
-        assert!(
-            result.is_ok(),
-            "eval_cmd should succeed with a valid JSONL file"
-        );
+        assert!(result.is_ok(), "eval_cmd should succeed with a valid JSONL file");
 
         cleanup(&dir);
     }
@@ -295,10 +253,7 @@ mod tests {
 
         // eval_cmd should dispatch to eval_from_dir when path is a directory
         let result = eval_cmd(&dir, None);
-        assert!(
-            result.is_ok(),
-            "eval_cmd should succeed with a directory of JSONL files"
-        );
+        assert!(result.is_ok(), "eval_cmd should succeed with a directory of JSONL files");
 
         cleanup(&dir);
     }
@@ -332,10 +287,7 @@ mod tests {
         // The output path has a nested directory that does not exist yet
         let output = dir.join("reports").join("subdir").join("report.json");
         let result = eval_cmd(&trace, Some(&output));
-        assert!(
-            result.is_ok(),
-            "eval_cmd should create missing parent directories"
-        );
+        assert!(result.is_ok(), "eval_cmd should create missing parent directories");
         assert!(output.exists());
 
         cleanup(&dir);
@@ -349,10 +301,7 @@ mod tests {
 
         // An empty file has zero events → an empty report (not an error)
         let result = eval_cmd(&trace, None);
-        assert!(
-            result.is_ok(),
-            "eval_cmd with empty JSONL should return Ok (empty report)"
-        );
+        assert!(result.is_ok(), "eval_cmd with empty JSONL should return Ok (empty report)");
 
         cleanup(&dir);
     }
@@ -363,10 +312,7 @@ mod tests {
         let path = dir.join("trace.jsonl");
         cleanup(&dir); // ensure path does not exist
         let result = eval_cmd(&path, None);
-        assert!(
-            result.is_err(),
-            "eval_cmd should return Err for a nonexistent path"
-        );
+        assert!(result.is_err(), "eval_cmd should return Err for a nonexistent path");
     }
 
     #[test]
@@ -495,10 +441,7 @@ mod tests {
         std::fs::write(&data, r#"[true, null, "text"]"#).unwrap();
 
         let result = validate(&schema, &data);
-        assert!(
-            result.is_ok(),
-            "validate should accept any valid JSON, not just objects"
-        );
+        assert!(result.is_ok(), "validate should accept any valid JSON, not just objects");
 
         cleanup(&dir);
     }

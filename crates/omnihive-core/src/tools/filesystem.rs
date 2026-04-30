@@ -472,9 +472,7 @@ mod tests {
         let tool = FileSystemTool::new();
         let input = make_input(
             "read",
-            tmp.join("omnihive_nonexistent_12345.txt")
-                .to_str()
-                .unwrap(),
+            tmp.join("omnihive_nonexistent_12345.txt").to_str().unwrap(),
         );
         let ctx = test_ctx(tmp.to_str().unwrap());
         let result = tool.execute(&input, &ctx);
