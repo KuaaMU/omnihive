@@ -175,7 +175,7 @@ pub fn run_task(
         };
 
         match registry.execute(&input, &ctx) {
-            Ok(output) => {
+            Ok(output) if output.success => {
                 let completed_step = step.completed(0, 0, &format!("{:?}", output.data));
                 task = task.with_step_completed(&completed_step.step_id);
 
@@ -192,6 +192,33 @@ pub fn run_task(
                     None,
                     None,
                 )?;
+            }
+            Ok(output) => {
+                let err_msg = output
+                    .error
+                    .unwrap_or_else(|| "Tool returned failure".to_string());
+                let failed_step = step.failed(&err_msg);
+                task = task.with_error(&err_msg);
+
+                emit_trace_step(
+                    &trace_file,
+                    &task,
+                    &failed_step,
+                    "step_failed",
+                    agent,
+                    None,
+                    None,
+                )?;
+
+                if task.consecutive_errors >= 3 {
+                    let new_status =
+                        state_machine::transition(task.status, TaskEvent::MaxRetriesExceeded)
+                            .map_err(|e| format!("State transition error: {}", e))?;
+                    task = task.with_status(new_status);
+                    task_model::write_task_state(project_dir, &task)?;
+                    emit_trace(&trace_file, &task, "task_failed", None)?;
+                    break;
+                }
             }
             Err(tool_err) => {
                 let failed_step = step.failed(&tool_err.message);

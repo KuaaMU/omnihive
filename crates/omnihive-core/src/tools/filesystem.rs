@@ -63,9 +63,9 @@ impl FileSystemTool {
                     parent.display()
                 )));
             } else {
-                // For write ops where parent doesn't exist yet, we still validate
-                // the non-canonicalized path doesn't escape workspace
-                candidate.clone()
+                // For write ops where parent doesn't exist yet, resolve `..` lexically
+                // without touching the filesystem, then validate against workspace.
+                normalize_path_lexical(&candidate)
             }
         };
 
@@ -284,6 +284,22 @@ impl Tool for FileSystemTool {
     }
 }
 
+/// Normalize a path lexically by resolving `.` and `..` components
+/// without touching the filesystem.
+fn normalize_path_lexical(path: &Path) -> PathBuf {
+    let mut components = Vec::new();
+    for comp in path.components() {
+        match comp {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                components.pop();
+            }
+            _ => components.push(comp),
+        }
+    }
+    components.iter().collect()
+}
+
 /// Compute a simple line-by-line diff summary.
 fn compute_simple_diff(old: &str, new: &str) -> String {
     let old_lines: Vec<&str> = old.lines().collect();
@@ -452,9 +468,15 @@ mod tests {
 
     #[test]
     fn test_fs_read_nonexistent() {
+        let tmp = std::env::temp_dir();
         let tool = FileSystemTool::new();
-        let input = make_input("read", "/tmp/omnihive_nonexistent_12345.txt");
-        let ctx = test_ctx("/tmp");
+        let input = make_input(
+            "read",
+            tmp.join("omnihive_nonexistent_12345.txt")
+                .to_str()
+                .unwrap(),
+        );
+        let ctx = test_ctx(tmp.to_str().unwrap());
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
     }

@@ -105,7 +105,7 @@ pub(crate) fn get_library_dir() -> Option<PathBuf> {
     // Environment variable override takes highest precedence
     if let Ok(env_lib) = std::env::var("OMNIHIVE_LIBRARY_DIR") {
         let env_path = PathBuf::from(&env_lib);
-        if env_path.exists() {
+        if env_path.is_dir() {
             return Some(env_path);
         }
     }

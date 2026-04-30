@@ -171,7 +171,21 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
+fn validate_skill_id(skill_id: &str) -> Result<(), String> {
+    if skill_id.is_empty() {
+        return Err("Skill ID cannot be empty".to_string());
+    }
+    if !skill_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err("Skill ID contains invalid characters".to_string());
+    }
+    Ok(())
+}
+
 pub(crate) fn get_skill_content_impl(skill_id: &str) -> Result<String, String> {
+    validate_skill_id(skill_id)?;
     let lib_dir = get_library_dir().ok_or_else(|| "Library directory not found".to_string())?;
 
     let real_path = lib_dir.join("real-skills").join(skill_id).join("SKILL.md");
