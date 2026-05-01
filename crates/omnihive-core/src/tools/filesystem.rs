@@ -63,9 +63,24 @@ impl FileSystemTool {
                     parent.display()
                 )));
             } else {
-                // For write ops where parent doesn't exist yet, resolve `..` lexically
-                // without touching the filesystem, then validate against workspace.
-                normalize_path_lexical(&candidate)
+                // Walk up to find deepest existing ancestor to resolve symlinks
+                let mut existing = candidate.as_path();
+                let mut suffix = Vec::new();
+                while !existing.exists() {
+                    if let Some(name) = existing.file_name() {
+                        suffix.push(name);
+                    }
+                    existing = match existing.parent() {
+                        Some(p) => p,
+                        None => break,
+                    };
+                }
+                let canon = std::fs::canonicalize(existing).unwrap_or_else(|_| existing.to_path_buf());
+                let mut resolved = canon;
+                for name in suffix.iter().rev() {
+                    resolved = resolved.join(name);
+                }
+                resolved
             }
         };
 

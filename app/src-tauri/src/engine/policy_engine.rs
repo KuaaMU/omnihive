@@ -217,7 +217,12 @@ fn conditions_match(conditions: &RuleConditions, request: &ToolRequest) -> bool 
 
 fn path_matches(pattern: &str, path: &str) -> bool {
     if let Some(prefix) = pattern.strip_suffix('*') {
-        return path.starts_with(prefix);
+        if !path.starts_with(prefix) {
+            return false;
+        }
+        // Ensure match is at a path component boundary
+        let rest = &path[prefix.len()..];
+        return rest.is_empty() || rest.starts_with('/') || rest.starts_with(std::path::MAIN_SEPARATOR);
     }
     pattern == path
 }

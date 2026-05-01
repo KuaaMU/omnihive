@@ -171,13 +171,18 @@ fn execute_command(
         ("sh", "-c")
     };
 
-    let mut child = Command::new(shell.0)
-        .arg(shell.1)
+    let mut cmd = Command::new(shell.0);
+    cmd.arg(shell.1)
         .arg(command)
         .current_dir(working_dir)
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
+        .stderr(std::process::Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+    let mut child = cmd.spawn()
         .map_err(|e| {
             ToolError::execution_failed(&format!("Failed to spawn process: {}", e))
                 .with_cause(&e.to_string())
@@ -216,6 +221,13 @@ fn execute_command(
             Ok(Some(status)) => break status,
             Ok(None) => {
                 if start.elapsed() >= timeout {
+                    #[cfg(unix)]
+                    {
+                        // Kill entire process group
+                        let _ = unsafe {
+                            libc::killpg(child.id() as i32, libc::SIGKILL)
+                        };
+                    }
                     let _ = child.kill();
                     let _ = child.wait();
                     // Join threads to clean up even on timeout
