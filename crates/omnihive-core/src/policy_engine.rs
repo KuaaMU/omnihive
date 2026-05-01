@@ -70,7 +70,7 @@ pub struct PolicyEngine {
 impl PolicyEngine {
     /// Create from a list of rules. Rules are sorted by priority (descending).
     pub fn new(mut rules: Vec<PolicyRule>) -> Self {
-        rules.sort_by(|a, b| b.priority.cmp(&a.priority));
+        rules.sort_by_key(|r| std::cmp::Reverse(r.priority));
         Self { rules }
     }
 
