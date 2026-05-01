@@ -160,11 +160,7 @@ impl FileSystemTool {
             }));
         }
 
-        items.sort_by(|a, b| {
-            let a_name = a["name"].as_str().unwrap_or("");
-            let b_name = b["name"].as_str().unwrap_or("");
-            a_name.cmp(b_name)
-        });
+        items.sort_by_key(|item| item["name"].as_str().unwrap_or("").to_string());
 
         Ok(ToolOutput::ok(serde_json::json!({
             "path": path.display().to_string(),

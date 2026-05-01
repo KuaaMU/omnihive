@@ -57,7 +57,7 @@ pub fn compute_eval(events: &[TraceEvent]) -> EvalReport {
         tasks.push(eval);
     }
 
-    tasks.sort_by(|a, b| a.task_id.cmp(&b.task_id));
+    tasks.sort_by_key(|t| t.task_id.clone());
     all_latencies.sort();
 
     let total_tasks = tasks.len();
