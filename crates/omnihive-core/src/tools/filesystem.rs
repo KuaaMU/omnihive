@@ -298,6 +298,7 @@ impl Tool for FileSystemTool {
 
 /// Normalize a path lexically by resolving `.` and `..` components
 /// without touching the filesystem.
+#[allow(dead_code)]
 fn normalize_path_lexical(path: &Path) -> PathBuf {
     let mut components = Vec::new();
     for comp in path.components() {
