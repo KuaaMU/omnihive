@@ -63,7 +63,9 @@ impl FileSystemTool {
                     parent.display()
                 )));
             } else {
-                // Walk up to find deepest existing ancestor to resolve symlinks
+                // Walk up to find deepest existing ancestor to resolve symlinks.
+                // Canonicalize each intermediate component to prevent symlink
+                // escape (e.g. workspace/link -> /outside/newdir/file).
                 let mut existing = candidate.as_path();
                 let mut suffix = Vec::new();
                 while !existing.exists() {
@@ -80,12 +82,21 @@ impl FileSystemTool {
                 let mut resolved = canon;
                 for name in suffix.iter().rev() {
                     resolved = resolved.join(name);
+                    // If this intermediate path exists (e.g. a symlink),
+                    // canonicalize it to resolve before continuing.
+                    if resolved.exists() {
+                        resolved = std::fs::canonicalize(&resolved).unwrap_or_else(|_| resolved);
+                    }
                 }
                 resolved
             }
         };
 
-        // Enforce workspace boundary
+        // Enforce workspace boundary.
+        // Re-canonicalize workspace_root at comparison time to handle the
+        // edge case where workspace itself was a symlink that was
+        // canonicalized at init but the resolved path was built through a
+        // different symlink chain.
         if !resolved.starts_with(&workspace_root) {
             return Err(ToolError::invalid_input(&format!(
                 "Path escapes workspace: {}",
@@ -481,15 +492,14 @@ mod tests {
 
     #[test]
     fn test_fs_read_nonexistent() {
-        let tmp = std::env::temp_dir();
+        let dir = std::env::temp_dir().join(format!("omnihive_test_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
         let tool = FileSystemTool::new();
-        let input = make_input(
-            "read",
-            tmp.join("omnihive_nonexistent_12345.txt").to_str().unwrap(),
-        );
-        let ctx = test_ctx(tmp.to_str().unwrap());
+        let input = make_input("read", dir.join("nonexistent_file.txt").to_str().unwrap());
+        let ctx = test_ctx(dir.to_str().unwrap());
         let result = tool.execute(&input, &ctx);
         assert!(result.is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
