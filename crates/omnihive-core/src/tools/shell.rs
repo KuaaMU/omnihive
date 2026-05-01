@@ -182,11 +182,10 @@ fn execute_command(
         use std::os::unix::process::CommandExt;
         cmd.process_group(0);
     }
-    let mut child = cmd.spawn()
-        .map_err(|e| {
-            ToolError::execution_failed(&format!("Failed to spawn process: {}", e))
-                .with_cause(&e.to_string())
-        })?;
+    let mut child = cmd.spawn().map_err(|e| {
+        ToolError::execution_failed(&format!("Failed to spawn process: {}", e))
+            .with_cause(&e.to_string())
+    })?;
 
     // Drain stdout/stderr in separate threads to avoid pipe buffer deadlock.
     // Without this, commands producing >64KB output would block and cause spurious timeouts.
@@ -224,9 +223,7 @@ fn execute_command(
                     #[cfg(unix)]
                     {
                         // Kill entire process group
-                        let _ = unsafe {
-                            libc::killpg(child.id() as i32, libc::SIGKILL)
-                        };
+                        let _ = unsafe { libc::killpg(child.id() as i32, libc::SIGKILL) };
                     }
                     let _ = child.kill();
                     let _ = child.wait();

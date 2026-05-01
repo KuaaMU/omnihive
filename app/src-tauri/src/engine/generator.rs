@@ -45,12 +45,30 @@ pub fn generate_all(
     // 3. Generate agent files
     for agent in &config.org.agents {
         let agent_md = generate_agent_md(agent, config);
-        let safe_role: String = agent.role.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect();
-        let safe_id: String = agent.persona.id.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect();
-        let path = output_dir.join(format!(
-            ".claude/agents/{}-{}.md",
-            safe_role, safe_id
-        ));
+        let safe_role: String = agent
+            .role
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let safe_id: String = agent
+            .persona
+            .id
+            .chars()
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let path = output_dir.join(format!(".claude/agents/{}-{}.md", safe_role, safe_id));
         fs::write(&path, &agent_md).map_err(|e| format!("Write error: {}", e))?;
         files_created.push(path.display().to_string());
     }

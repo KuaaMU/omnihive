@@ -75,7 +75,8 @@ impl FileSystemTool {
                         None => break,
                     };
                 }
-                let canon = std::fs::canonicalize(existing).unwrap_or_else(|_| existing.to_path_buf());
+                let canon =
+                    std::fs::canonicalize(existing).unwrap_or_else(|_| existing.to_path_buf());
                 let mut resolved = canon;
                 for name in suffix.iter().rev() {
                     resolved = resolved.join(name);

@@ -222,7 +222,9 @@ fn path_matches(pattern: &str, path: &str) -> bool {
         }
         // Ensure match is at a path component boundary
         let rest = &path[prefix.len()..];
-        return rest.is_empty() || rest.starts_with('/') || rest.starts_with(std::path::MAIN_SEPARATOR);
+        return rest.is_empty()
+            || rest.starts_with('/')
+            || rest.starts_with(std::path::MAIN_SEPARATOR);
     }
     pattern == path
 }
